@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { BuildingType, CityStats, AIGoal, NewsItem } from '../types';
 import { BUILDINGS } from '../constants';
 
@@ -15,6 +15,7 @@ interface UIOverlayProps {
   onClaimReward: () => void;
   isGeneratingGoal: boolean;
   aiEnabled: boolean;
+  onSave: () => void;
 }
 
 const tools = [
@@ -31,7 +32,9 @@ const ToolButton: React.FC<{
   isSelected: boolean;
   onClick: () => void;
   money: number;
-}> = ({ type, isSelected, onClick, money }) => {
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+}> = ({ type, isSelected, onClick, money, onMouseEnter, onMouseLeave }) => {
   const config = BUILDINGS[type];
   const canAfford = money >= config.cost;
   const isBulldoze = type === BuildingType.None;
@@ -42,6 +45,8 @@ const ToolButton: React.FC<{
   return (
     <button
       onClick={onClick}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
       disabled={!isBulldoze && !canAfford}
       className={`
         relative flex flex-col items-center justify-center rounded-lg border-2 transition-all shadow-lg backdrop-blur-sm flex-shrink-0
@@ -49,7 +54,6 @@ const ToolButton: React.FC<{
         ${isSelected ? 'border-white bg-white/20 scale-110 z-10' : 'border-gray-600 bg-gray-900/80 hover:bg-gray-800'}
         ${!isBulldoze && !canAfford ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
       `}
-      title={config.description}
     >
       <div className="w-6 h-6 md:w-8 md:h-8 rounded mb-0.5 md:mb-1 border border-black/30 shadow-inner flex items-center justify-center overflow-hidden" style={{ backgroundColor: isBulldoze ? 'transparent' : bgColor }}>
         {isBulldoze && <div className="w-full h-full bg-red-600 text-white flex justify-center items-center font-bold text-base md:text-lg">✕</div>}
@@ -71,9 +75,12 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
   newsFeed,
   onClaimReward,
   isGeneratingGoal,
-  aiEnabled
+  aiEnabled,
+  onSave
 }) => {
   const newsRef = useRef<HTMLDivElement>(null);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [hoveredTool, setHoveredTool] = useState<BuildingType | null>(null);
 
   // Auto-scroll news
   useEffect(() => {
@@ -82,6 +89,16 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
     }
   }, [newsFeed]);
 
+  const handleSaveClick = () => {
+    setSaveStatus('saving');
+    onSave();
+    // Simulate short delay for feedback
+    setTimeout(() => {
+      setSaveStatus('saved');
+      setTimeout(() => setSaveStatus('idle'), 2000);
+    }, 500);
+  };
+
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2 md:p-4 font-sans z-10">
       
@@ -89,7 +106,7 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
       <div className="flex flex-col md:flex-row md:justify-between md:items-start pointer-events-auto gap-2 w-full max-w-full">
         
         {/* Stats */}
-        <div className="bg-gray-900/90 text-white p-2 md:p-3 rounded-xl border border-gray-700 shadow-2xl backdrop-blur-md flex gap-3 md:gap-6 items-center justify-between md:justify-start w-full md:w-auto">
+        <div className="bg-gray-900/90 text-white p-2 md:p-3 rounded-xl border border-gray-700 shadow-2xl backdrop-blur-md flex gap-3 md:gap-6 items-center justify-between md:justify-start w-full md:w-auto relative">
           <div className="flex flex-col">
             <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Treasury</span>
             <span className="text-lg md:text-2xl font-black text-green-400 font-mono drop-shadow-md">${stats.money.toLocaleString()}</span>
@@ -104,6 +121,25 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
              <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Day</span>
              <span className="text-base md:text-lg font-bold text-white font-mono">{stats.day}</span>
           </div>
+          
+          <div className="w-px h-6 md:h-8 bg-gray-700 ml-2"></div>
+          
+          <button 
+            onClick={handleSaveClick}
+            className={`
+              flex items-center justify-center p-2 rounded-lg transition-all duration-300
+              ${saveStatus === 'saved' ? 'bg-green-500/20 text-green-400 border border-green-500/50' : 'hover:bg-gray-800 text-gray-400 hover:text-white border border-transparent'}
+            `}
+            title="Save Game"
+          >
+            {saveStatus === 'saved' ? (
+              <span className="text-xs font-bold uppercase tracking-wider animate-pulse">Saved</span>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+            )}
+          </button>
         </div>
 
         {/* AI Goal Panel */}
@@ -173,39 +209,64 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
       {/* Bottom Bar: Tools & News */}
       <div className="flex flex-col-reverse md:flex-row md:justify-between md:items-end pointer-events-auto mt-auto gap-2 w-full max-w-full">
         
-        {/* Toolbar - Reversed on Mobile so it appears below News (in DOM order is News -> Toolbar with col-reverse, but visually we want Toolbar bottom, News Top on mobile. 
-            Actually, visually we want:
-            Mobile: 
-            [News Feed]
-            [Toolbar]
-            
-            Desktop:
-            [Toolbar] ... [News Feed]
-            
-            If container is flex-col-reverse:
-            1. Child (Toolbar) -> Bottom
-            2. Child (News) -> Top
-            
-            If container is md:flex-row:
-            1. Child (Toolbar) -> Left
-            2. Child (News) -> Right
-            
-            This works perfectly.
-        */}
-        
-        <div className="flex gap-1 md:gap-2 bg-gray-900/80 p-1 md:p-2 rounded-2xl border border-gray-600/50 backdrop-blur-xl shadow-2xl w-full md:w-auto overflow-x-auto no-scrollbar justify-start md:justify-start">
-          <div className="flex gap-1 md:gap-2 min-w-max px-1">
-            {tools.map((type) => (
-              <ToolButton
-                key={type}
-                type={type}
-                isSelected={selectedTool === type}
-                onClick={() => onSelectTool(type)}
-                money={stats.money}
-              />
-            ))}
+        {/* Toolbar with Tooltip */}
+        <div className="relative w-full md:w-auto flex flex-col items-center md:items-start group">
+          
+          {hoveredTool && (() => {
+            const config = BUILDINGS[hoveredTool];
+            return (
+              <div className="absolute bottom-full left-0 mb-2 w-48 bg-gray-950/95 p-3 rounded-lg border border-gray-600 shadow-2xl backdrop-blur-md text-xs z-50 animate-fade-in pointer-events-none">
+                 <div className="font-bold text-white text-sm mb-1">{config.name}</div>
+                 <div className="text-gray-400 mb-3 italic leading-tight">{config.description}</div>
+                 
+                 <div className="space-y-1.5">
+                    {config.cost > 0 && (
+                        <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                            <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Cost</span>
+                            <span className="text-red-400 font-mono font-bold text-sm">${config.cost}</span>
+                        </div>
+                    )}
+                    {config.incomeGen > 0 && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Income</span>
+                            <span className="text-green-400 font-mono font-bold text-sm">+${config.incomeGen}/day</span>
+                        </div>
+                    )}
+                    {config.popGen > 0 && (
+                        <div className="flex justify-between items-center">
+                            <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Pop Growth</span>
+                            <span className="text-blue-400 font-mono font-bold text-sm">+{config.popGen}/day</span>
+                        </div>
+                    )}
+                    {config.type === BuildingType.None && (
+                        <div className="text-red-400 font-bold flex items-center gap-2">
+                           <span>⚠️</span> Clears selected tile
+                        </div>
+                    )}
+                 </div>
+                 
+                 {/* Arrow pointer */}
+                 <div className="absolute top-full left-6 -ml-1 border-8 border-transparent border-t-gray-950/95"></div>
+              </div>
+            );
+          })()}
+
+          <div className="flex gap-1 md:gap-2 bg-gray-900/80 p-1 md:p-2 rounded-2xl border border-gray-600/50 backdrop-blur-xl shadow-2xl w-full md:w-auto overflow-x-auto no-scrollbar justify-start md:justify-start">
+            <div className="flex gap-1 md:gap-2 min-w-max px-1">
+              {tools.map((type) => (
+                <ToolButton
+                  key={type}
+                  type={type}
+                  isSelected={selectedTool === type}
+                  onClick={() => onSelectTool(type)}
+                  money={stats.money}
+                  onMouseEnter={() => setHoveredTool(type)}
+                  onMouseLeave={() => setHoveredTool(null)}
+                />
+              ))}
+            </div>
+            <div className="text-[8px] text-gray-500 uppercase writing-mode-vertical flex items-center justify-center font-bold tracking-widest border-l border-gray-700 pl-1 ml-1 select-none">Build</div>
           </div>
-          <div className="text-[8px] text-gray-500 uppercase writing-mode-vertical flex items-center justify-center font-bold tracking-widest border-l border-gray-700 pl-1 ml-1 select-none">Build</div>
         </div>
 
         {/* News Feed */}

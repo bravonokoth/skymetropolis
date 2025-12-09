@@ -85,13 +85,56 @@ function App() {
   }, [addNewsItem]);
 
 
+  // --- Persistence Logic ---
+
+  const handleSaveGame = useCallback(() => {
+    const gameState = {
+      grid: gridRef.current,
+      stats: statsRef.current,
+      currentGoal: goalRef.current,
+      newsFeed,
+      aiEnabled: aiEnabledRef.current,
+      savedAt: Date.now(),
+    };
+    try {
+      localStorage.setItem('skymetropolis_save', JSON.stringify(gameState));
+    } catch (e) {
+      console.error("Failed to save game:", e);
+      addNewsItem({ id: Date.now().toString(), text: "Save failed! Local storage might be full.", type: 'negative' });
+    }
+  }, [newsFeed, addNewsItem]);
+
+  const handleLoadGame = useCallback(() => {
+    const saveStr = localStorage.getItem('skymetropolis_save');
+    if (saveStr) {
+      try {
+        const gameState = JSON.parse(saveStr);
+        // Restore state
+        setGrid(gameState.grid);
+        setStats(gameState.stats);
+        setCurrentGoal(gameState.currentGoal);
+        setNewsFeed(gameState.newsFeed);
+        setAiEnabled(gameState.aiEnabled);
+        
+        // Start game
+        setGameStarted(true);
+        addNewsItem({ id: Date.now().toString(), text: `Game loaded. Welcome back, Mayor!`, type: 'positive' });
+      } catch (e) {
+        console.error("Failed to load save:", e);
+      }
+    }
+  }, [addNewsItem]);
+
+
   // --- Initial Setup ---
   useEffect(() => {
     if (!gameStarted) return;
 
-    addNewsItem({ id: Date.now().toString(), text: "Welcome to SkyMetropolis. Terrain generation complete.", type: 'positive' });
+    if (newsFeed.length === 0) {
+       addNewsItem({ id: Date.now().toString(), text: "Welcome to SkyMetropolis. Terrain generation complete.", type: 'positive' });
+    }
     
-    if (aiEnabled) {
+    if (aiEnabled && !currentGoal) {
       // @google/genai-api-key-fix: The API key's availability is a hard requirement and should not be checked in the UI.
       fetchNewGoal();
     }
@@ -236,7 +279,7 @@ function App() {
       
       {/* Start Screen Overlay */}
       {!gameStarted && (
-        <StartScreen onStart={handleStart} />
+        <StartScreen onStart={handleStart} onLoad={handleLoadGame} />
       )}
 
       {/* UI Layer */}
@@ -250,6 +293,7 @@ function App() {
           onClaimReward={handleClaimReward}
           isGeneratingGoal={isGeneratingGoal}
           aiEnabled={aiEnabled}
+          onSave={handleSaveGame}
         />
       )}
 

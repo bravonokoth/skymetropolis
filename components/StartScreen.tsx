@@ -2,14 +2,30 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
 */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface StartScreenProps {
   onStart: (aiEnabled: boolean) => void;
+  onLoad: () => void;
 }
 
-const StartScreen: React.FC<StartScreenProps> = ({ onStart }) => {
+const StartScreen: React.FC<StartScreenProps> = ({ onStart, onLoad }) => {
   const [aiEnabled, setAiEnabled] = useState(true);
+  const [hasSave, setHasSave] = useState(false);
+  const [saveInfo, setSaveInfo] = useState<string>("");
+
+  useEffect(() => {
+    try {
+      const saveStr = localStorage.getItem('skymetropolis_save');
+      if (saveStr) {
+        const data = JSON.parse(saveStr);
+        setHasSave(true);
+        setSaveInfo(`Day ${data.stats.day} • $${data.stats.money.toLocaleString()} • Pop: ${data.stats.population}`);
+      }
+    } catch (e) {
+      console.error("Error checking save:", e);
+    }
+  }, []);
 
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center z-50 text-white font-sans p-6 bg-black/30 backdrop-blur-sm transition-all duration-1000">
@@ -25,6 +41,31 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart }) => {
             <p className="text-slate-400 mb-8 text-sm font-medium uppercase tracking-widest">
             Isometric City Builder
             </p>
+
+            {hasSave && (
+              <div className="mb-8">
+                <button
+                  onClick={onLoad}
+                  className="w-full py-3 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold rounded-xl shadow-lg shadow-green-900/20 transform transition-all hover:scale-[1.02] active:scale-[0.98] text-lg tracking-wide border border-green-400/30 flex flex-col items-center justify-center gap-1 group"
+                >
+                  <span className="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                    Continue City
+                  </span>
+                  <span className="text-xs font-mono font-normal opacity-80 text-green-100 group-hover:text-white transition-colors">
+                    {saveInfo}
+                  </span>
+                </button>
+                
+                <div className="relative flex py-4 items-center">
+                    <div className="flex-grow border-t border-slate-700"></div>
+                    <span className="flex-shrink-0 mx-4 text-slate-500 text-xs uppercase font-bold tracking-widest">Or Start New</span>
+                    <div className="flex-grow border-t border-slate-700"></div>
+                </div>
+              </div>
+            )}
 
             <div className="bg-slate-800/50 p-5 rounded-xl border border-slate-700/50 mb-8 hover:border-slate-600 transition-colors shadow-inner">
             <label className="flex items-center justify-between cursor-pointer group">
@@ -52,9 +93,9 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart }) => {
 
             <button 
             onClick={() => onStart(aiEnabled)}
-            className="w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-cyan-900/20 transform transition-all hover:scale-[1.02] active:scale-[0.98] text-lg tracking-wide"
+            className={`w-full py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold rounded-xl shadow-lg shadow-cyan-900/20 transform transition-all hover:scale-[1.02] active:scale-[0.98] text-lg tracking-wide ${hasSave ? 'opacity-90 hover:opacity-100' : ''}`}
             >
-            Start Building
+              {hasSave ? 'Start New City' : 'Start Building'}
             </button>
 
             <div className="mt-8 text-center">

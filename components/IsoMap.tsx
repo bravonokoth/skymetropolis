@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import { Canvas, useFrame, useThree, ThreeElements } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { MapControls, Environment, SoftShadows, Instance, Instances, Float, useTexture, Outlines, OrthographicCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { MathUtils } from 'three';
@@ -13,7 +13,51 @@ import { GRID_SIZE, BUILDINGS } from '../constants';
 // Fix for TypeScript not recognizing R3F elements in JSX
 declare global {
   namespace JSX {
-    interface IntrinsicElements extends ThreeElements {}
+    interface IntrinsicElements {
+      mesh: any;
+      group: any;
+      meshStandardMaterial: any;
+      meshBasicMaterial: any;
+      instancedMesh: any;
+      boxGeometry: any;
+      planeGeometry: any;
+      ambientLight: any;
+      directionalLight: any;
+    }
+  }
+}
+
+// Augment React's JSX namespace for environments where JSX is resolved from React
+declare module 'react' {
+  namespace JSX {
+    interface IntrinsicElements {
+      mesh: any;
+      group: any;
+      meshStandardMaterial: any;
+      meshBasicMaterial: any;
+      instancedMesh: any;
+      boxGeometry: any;
+      planeGeometry: any;
+      ambientLight: any;
+      directionalLight: any;
+    }
+  }
+}
+
+// Fix for TypeScript not recognizing R3F elements in JSX
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      mesh: any;
+      group: any;
+      meshStandardMaterial: any;
+      meshBasicMaterial: any;
+      instancedMesh: any;
+      boxGeometry: any;
+      planeGeometry: any;
+      ambientLight: any;
+      directionalLight: any;
+    }
   }
 }
 
