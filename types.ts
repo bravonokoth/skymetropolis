@@ -35,6 +35,7 @@ export interface CityStats {
   money: number;
   population: number;
   day: number;
+  happiness: number;
 }
 
 export interface AIGoal {

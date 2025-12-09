@@ -35,7 +35,7 @@ function App() {
   const [aiEnabled, setAiEnabled] = useState(true);
 
   const [grid, setGrid] = useState<Grid>(createInitialGrid);
-  const [stats, setStats] = useState<CityStats>({ money: INITIAL_MONEY, population: 0, day: 1 });
+  const [stats, setStats] = useState<CityStats>({ money: INITIAL_MONEY, population: 0, day: 1, happiness: 100 });
   const [selectedTool, setSelectedTool] = useState<BuildingType>(BuildingType.Road);
   
   // --- AI State ---
@@ -111,7 +111,8 @@ function App() {
         const gameState = JSON.parse(saveStr);
         // Restore state
         setGrid(gameState.grid);
-        setStats(gameState.stats);
+        // Ensure happiness exists for older saves
+        setStats({ ...gameState.stats, happiness: gameState.stats.happiness ?? 100 });
         setCurrentGoal(gameState.currentGoal);
         setNewsFeed(gameState.newsFeed);
         setAiEnabled(gameState.aiEnabled);
@@ -171,10 +172,38 @@ function App() {
         if (newPop > maxPop) newPop = maxPop; // limit
         if (resCount === 0 && prev.population > 0) newPop = Math.max(0, prev.population - 5); // people leave if no homes
 
+        // Calculate Happiness
+        let newHappiness = 60; // Base baseline
+        const parkCount = buildingCounts[BuildingType.Park] || 0;
+        const indCount = buildingCounts[BuildingType.Industrial] || 0;
+
+        // Parks boost happiness (+5 each, up to 40)
+        newHappiness += Math.min(parkCount * 5, 40);
+        
+        // Pollution reduces happiness (-4 each, up to 40)
+        newHappiness -= Math.min(indCount * 4, 40);
+        
+        // Overcrowding penalty
+        if (resCount > 0 && newPop > maxPop * 0.9) {
+          newHappiness -= 15;
+        }
+        
+        // Homelessness extreme penalty
+        if (resCount === 0 && newPop > 0) {
+          newHappiness = 10;
+        }
+        
+        // Wealth bonus (small)
+        if (prev.money > 2000) newHappiness += 5;
+
+        // Clamp
+        newHappiness = Math.max(0, Math.min(100, Math.floor(newHappiness)));
+
         const newStats = {
           money: prev.money + dailyIncome,
           population: newPop,
           day: prev.day + 1,
+          happiness: newHappiness,
         };
         
         // 3. Check Goal Completion

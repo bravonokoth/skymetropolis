@@ -99,6 +99,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
     }, 500);
   };
 
+  // Determine happiness color
+  const happinessColor = stats.happiness > 75 ? 'text-green-400' : stats.happiness > 40 ? 'text-yellow-400' : 'text-red-500';
+  const happinessIcon = stats.happiness > 75 ? '😊' : stats.happiness > 40 ? '😐' : '😡';
+
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2 md:p-4 font-sans z-10">
       
@@ -115,6 +119,13 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
           <div className="flex flex-col">
             <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Citizens</span>
             <span className="text-base md:text-xl font-bold text-blue-300 font-mono drop-shadow-md">{stats.population.toLocaleString()}</span>
+          </div>
+          <div className="w-px h-6 md:h-8 bg-gray-700"></div>
+           <div className="flex flex-col">
+            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Happiness</span>
+            <span className={`text-base md:text-xl font-bold font-mono drop-shadow-md flex items-center gap-1 ${happinessColor}`}>
+              <span className="text-lg">{happinessIcon}</span> {stats.happiness}%
+            </span>
           </div>
           <div className="w-px h-6 md:h-8 bg-gray-700"></div>
           <div className="flex flex-col items-end">

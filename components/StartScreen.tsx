@@ -20,7 +20,8 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart, onLoad }) => {
       if (saveStr) {
         const data = JSON.parse(saveStr);
         setHasSave(true);
-        setSaveInfo(`Day ${data.stats.day} • $${data.stats.money.toLocaleString()} • Pop: ${data.stats.population}`);
+        const happy = data.stats.happiness ?? 100;
+        setSaveInfo(`Day ${data.stats.day} • $${data.stats.money.toLocaleString()} • Pop: ${data.stats.population} • Happy: ${happy}%`);
       }
     } catch (e) {
       console.error("Error checking save:", e);
