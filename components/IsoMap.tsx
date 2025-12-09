@@ -724,20 +724,42 @@ const RoadMarkings = React.memo(({ x, y, grid, yOffset }: { x: number; y: number
   const whiteMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.8 }), []);
   const trackMat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.15 }), []);
   const manholeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4b5563', roughness: 0.8, metalness: 0.6 }), []);
-  const manholeCircleGeo = useMemo(() => new THREE.CircleGeometry(0.12, 12), []);
   
   // Geometries
   const straightGeo = useMemo(() => new THREE.PlaneGeometry(0.12, 1), []);
-  const halfGeo = useMemo(() => new THREE.PlaneGeometry(0.12, 0.6), []); // Center to edge
-  const stopGeo = useMemo(() => new THREE.PlaneGeometry(0.4, 0.1), []); // White bar
-  
-  // Curve: Ring segment. Center at corner.
-  // Ring radius 0.5. Thickness 0.12.
   const curveGeo = useMemo(() => new THREE.RingGeometry(0.44, 0.56, 24, 1, Math.PI, Math.PI/2), []);
   
   // Tracks
   const trackStraightGeo = useMemo(() => new THREE.PlaneGeometry(0.1, 1), []);
   const trackPatchGeo = useMemo(() => new THREE.CircleGeometry(0.35, 12), []); // Intersection dirt
+
+  // Sidewalks
+  const sidewalkMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#9ca3af', roughness: 0.8 }), []);
+  const sidewalkGeo = useMemo(() => new THREE.PlaneGeometry(1, 0.15), []); // Long strip (horizontal relative to texture)
+  
+  // Rounded Corner for Intersection (Inverse arc logic)
+  // We want a shape that fits in the corner (0.5 x 0.5) but has a concave cutout where the road turns.
+  const curbCornerGeo = useMemo(() => {
+    const size = 0.25; // Size of the corner curb piece
+    const shape = new THREE.Shape();
+    shape.moveTo(0, 0);
+    shape.lineTo(size, 0);
+    shape.lineTo(size, size);
+    shape.lineTo(0, size);
+    shape.lineTo(0, 0);
+    
+    // Create hole for the rounded road part
+    const hole = new THREE.Path();
+    hole.moveTo(size, 0);
+    // Draw arc from (size,0) to (0,size) with center at (size,size)
+    hole.absarc(size, size, size, Math.PI * 1.5, Math.PI, true);
+    shape.holes.push(hole);
+    
+    return new THREE.ShapeGeometry(shape);
+  }, []);
+
+  // Zebra Crosswalk (Vertical strip)
+  const zebraGeo = useMemo(() => new THREE.PlaneGeometry(0.06, 0.3), []);
 
   // Helpers
   const isRoad = (gx: number, gy: number) => {
@@ -754,15 +776,22 @@ const RoadMarkings = React.memo(({ x, y, grid, yOffset }: { x: number; y: number
   const neighborCount = (u?1:0) + (d?1:0) + (l?1:0) + (r?1:0);
   
   const hash = getHash(x, y);
-
-  // Manholes only on straight or dead ends, not intersections (usually)
   const showManhole = hash > 0.9 && neighborCount <= 2; 
+
+  const renderCrosswalk = (rotation: number, offsetX: number, offsetY: number) => {
+     return (
+       <group position={[offsetX, offsetY, 0.006]} rotation={[0,0,rotation]}>
+         {[-0.1, 0, 0.1].map((off, i) => (
+            <mesh key={i} position={[off, 0, 0]} geometry={zebraGeo} material={whiteMat} />
+         ))}
+       </group>
+     )
+  }
 
   return (
     <group rotation={[-Math.PI / 2, 0, 0]} position={[0, yOffset, 0]}>
       {/* 1. Tracks/Dirt Layer (Lowest) */}
       {(neighbors === 12 || neighbors === 3 || neighborCount === 1) && (
-        // Straight / Dead End
         <>
            {(neighbors & 12) === 12 && ( // Vertical
              <>
@@ -776,61 +805,56 @@ const RoadMarkings = React.memo(({ x, y, grid, yOffset }: { x: number; y: number
                <mesh position={[0, 0.2, 0.001]} rotation={[0,0,Math.PI/2]} geometry={trackStraightGeo} material={trackMat} />
              </>
            )}
-           {/* Dead ends handled partially by above or default */}
         </>
       )}
       
       {neighborCount > 2 && (
-        // Intersection dirt patch
         <mesh position={[0, 0, 0.001]} geometry={trackPatchGeo} material={trackMat} opacity={0.3} />
       )}
 
-      {/* 2. Yellow Lines / Markings */}
-      
+      {/* 2. Sidewalks (Raised Curb) */}
+      {/* Draw Sidewalks on edges that are NOT roads to define the street block */}
+      {!u && <mesh position={[0, 0.425, 0.02]} geometry={sidewalkGeo} material={sidewalkMat} />}
+      {!d && <mesh position={[0, -0.425, 0.02]} geometry={sidewalkGeo} material={sidewalkMat} />}
+      {!l && <mesh position={[-0.425, 0, 0.02]} rotation={[0,0,Math.PI/2]} geometry={sidewalkGeo} material={sidewalkMat} />}
+      {!r && <mesh position={[0.425, 0, 0.02]} rotation={[0,0,Math.PI/2]} geometry={sidewalkGeo} material={sidewalkMat} />}
+
+      {/* 3. Intersection Corner Curbs (Round the inner corners of intersections) */}
+      {/* If two adjacent sides are roads, the corner between them is part of the intersection. We round it off. */}
+      {u && l && <mesh position={[-0.5, 0.5, 0.02]} rotation={[0,0,-Math.PI/2]} geometry={curbCornerGeo} material={sidewalkMat} />}
+      {u && r && <mesh position={[0.5, 0.5, 0.02]} rotation={[0,0,Math.PI]} geometry={curbCornerGeo} material={sidewalkMat} />}
+      {d && l && <mesh position={[-0.5, -0.5, 0.02]} rotation={[0,0,0]} geometry={curbCornerGeo} material={sidewalkMat} />}
+      {d && r && <mesh position={[0.5, -0.5, 0.02]} rotation={[0,0,Math.PI/2]} geometry={curbCornerGeo} material={sidewalkMat} />}
+
+      {/* 4. Yellow Lines */}
       {/* Straight Vertical */}
       {neighbors === 12 && <mesh position={[0, 0, 0.005]} geometry={straightGeo} material={lineMat} />}
-      
       {/* Straight Horizontal */}
       {neighbors === 3 && <mesh position={[0, 0, 0.005]} rotation={[0,0,Math.PI/2]} geometry={straightGeo} material={lineMat} />}
 
       {/* Corners */}
-      {neighbors === 9 && ( // U + R
-         <mesh position={[0.5, 0.5, 0.005]} geometry={curveGeo} material={lineMat} />
-      )}
-      {neighbors === 10 && ( // U + L
-         <mesh position={[-0.5, 0.5, 0.005]} rotation={[0,0,Math.PI/2]} geometry={curveGeo} material={lineMat} />
-      )}
-      {neighbors === 6 && ( // D + L
-         <mesh position={[-0.5, -0.5, 0.005]} rotation={[0,0,Math.PI]} geometry={curveGeo} material={lineMat} />
-      )}
-      {neighbors === 5 && ( // D + R
-         <mesh position={[0.5, -0.5, 0.005]} rotation={[0,0,-Math.PI/2]} geometry={curveGeo} material={lineMat} />
-      )}
+      {neighbors === 9 && <mesh position={[0.5, 0.5, 0.005]} geometry={curveGeo} material={lineMat} />}
+      {neighbors === 10 && <mesh position={[-0.5, 0.5, 0.005]} rotation={[0,0,Math.PI/2]} geometry={curveGeo} material={lineMat} />}
+      {neighbors === 6 && <mesh position={[-0.5, -0.5, 0.005]} rotation={[0,0,Math.PI]} geometry={curveGeo} material={lineMat} />}
+      {neighbors === 5 && <mesh position={[0.5, -0.5, 0.005]} rotation={[0,0,-Math.PI/2]} geometry={curveGeo} material={lineMat} />}
 
-      {/* Intersections (T and Cross) - Draw Stop Lines */}
-      {neighborCount > 2 && (
+      {/* 5. Crosswalks (Intersections & T-Junctions) */}
+      {(neighborCount > 2) && (
          <>
-            {u && <mesh position={[0, 0.35, 0.005]} geometry={stopGeo} material={whiteMat} />}
-            {d && <mesh position={[0, -0.35, 0.005]} geometry={stopGeo} material={whiteMat} />}
-            {l && <mesh position={[-0.35, 0, 0.005]} rotation={[0,0,Math.PI/2]} geometry={stopGeo} material={whiteMat} />}
-            {r && <mesh position={[0.35, 0, 0.005]} rotation={[0,0,Math.PI/2]} geometry={stopGeo} material={whiteMat} />}
+            {u && renderCrosswalk(0, 0, 0.35)}
+            {d && renderCrosswalk(0, 0, -0.35)}
+            {l && renderCrosswalk(Math.PI/2, -0.35, 0)}
+            {r && renderCrosswalk(Math.PI/2, 0.35, 0)}
          </>
-      )}
-
-      {/* Dead Ends - Cap lines */}
-      {neighborCount === 1 && (
-        <>
-           {u && <mesh position={[0, 0.2, 0.005]} geometry={halfGeo} material={lineMat} />}
-           {d && <mesh position={[0, -0.2, 0.005]} geometry={halfGeo} material={lineMat} />}
-           {l && <mesh position={[-0.2, 0, 0.005]} rotation={[0,0,Math.PI/2]} geometry={halfGeo} material={lineMat} />}
-           {r && <mesh position={[0.2, 0, 0.005]} rotation={[0,0,Math.PI/2]} geometry={halfGeo} material={lineMat} />}
-        </>
       )}
 
       {/* Manhole */}
       {showManhole && (
           <group position={[0, 0, 0.006]}>
-            <mesh geometry={manholeCircleGeo} material={manholeMat} />
+             <mesh>
+                <circleGeometry args={[0.12, 12]} />
+                <meshStandardMaterial color="#4b5563" roughness={0.8} metalness={0.6} />
+             </mesh>
              <mesh position={[0,0,0.001]}>
                 <ringGeometry args={[0.08, 0.09, 12]} />
                 <meshBasicMaterial color="#374151" />
