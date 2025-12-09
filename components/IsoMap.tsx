@@ -7,7 +7,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { MapControls, Environment, SoftShadows, Instance, Instances, Float, useTexture, Outlines, OrthographicCamera } from '@react-three/drei';
 import * as THREE from 'three';
 import { MathUtils } from 'three';
-import { Grid, BuildingType, TileData } from '../types';
+import { Grid, BuildingType, TileData, WeatherType } from '../types';
 import { GRID_SIZE, BUILDINGS } from '../constants';
 
 // Fix for TypeScript not recognizing R3F elements in JSX
@@ -21,8 +21,11 @@ declare global {
       instancedMesh: any;
       boxGeometry: any;
       planeGeometry: any;
+      circleGeometry: any;
+      ringGeometry: any;
       ambientLight: any;
       directionalLight: any;
+      fog: any;
     }
   }
 }
@@ -38,25 +41,11 @@ declare module 'react' {
       instancedMesh: any;
       boxGeometry: any;
       planeGeometry: any;
+      circleGeometry: any;
+      ringGeometry: any;
       ambientLight: any;
       directionalLight: any;
-    }
-  }
-}
-
-// Fix for TypeScript not recognizing R3F elements in JSX
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      mesh: any;
-      group: any;
-      meshStandardMaterial: any;
-      meshBasicMaterial: any;
-      instancedMesh: any;
-      boxGeometry: any;
-      planeGeometry: any;
-      ambientLight: any;
-      directionalLight: any;
+      fog: any;
     }
   }
 }
@@ -159,7 +148,7 @@ const ProceduralBuilding = React.memo(({ type, baseColor, x, y, opacity = 1, tra
       {(() => {
         switch (type) {
           case BuildingType.Residential:
-            if (variant < 33) {
+            if (variant < 25) {
               // Cozy Cottage
               return (
                 <>
@@ -170,7 +159,7 @@ const ProceduralBuilding = React.memo(({ type, baseColor, x, y, opacity = 1, tra
                   <mesh {...commonProps} material={accentMat} geometry={boxGeo} position={[0, 0.1, 0.32]} scale={[0.15, 0.2, 0.05]} />
                 </>
               );
-            } else if (variant < 66) {
+            } else if (variant < 50) {
               // Modern Boxy
               return (
                 <>
@@ -179,7 +168,7 @@ const ProceduralBuilding = React.memo(({ type, baseColor, x, y, opacity = 1, tra
                   <WindowBlock position={[-0.1, 0.5, 0.41]} scale={[0.4, 0.2, 0.05]} />
                 </>
               );
-            } else {
+            } else if (variant < 75) {
               // Townhouse
               return (
                 <>
@@ -189,10 +178,25 @@ const ProceduralBuilding = React.memo(({ type, baseColor, x, y, opacity = 1, tra
                   <WindowBlock position={[0, 0.3, 0.31]} scale={[0.3, 0.2, 0.05]} />
                 </>
               );
+            } else {
+              // NEW: Luxury Apartments
+              return (
+                <>
+                  <mesh {...commonProps} material={mainMat} geometry={boxGeo} position={[0, 0.6, 0]} scale={[0.8, 1.2, 0.8]} />
+                  <mesh {...commonProps} material={roofMat} geometry={boxGeo} position={[0, 1.25, 0]} scale={[0.7, 0.1, 0.7]} />
+                  {/* Balconies */}
+                  <mesh {...commonProps} material={accentMat} geometry={boxGeo} position={[0, 0.4, 0.45]} scale={[0.6, 0.05, 0.1]} />
+                  <mesh {...commonProps} material={accentMat} geometry={boxGeo} position={[0, 0.8, 0.45]} scale={[0.6, 0.05, 0.1]} />
+                  <WindowBlock position={[0.15, 0.6, 0.41]} scale={[0.2, 0.25, 0.05]} />
+                  <WindowBlock position={[-0.15, 0.6, 0.41]} scale={[0.2, 0.25, 0.05]} />
+                  <WindowBlock position={[0.15, 1.0, 0.41]} scale={[0.2, 0.25, 0.05]} />
+                  <WindowBlock position={[-0.15, 1.0, 0.41]} scale={[0.2, 0.25, 0.05]} />
+                </>
+              );
             }
 
           case BuildingType.Commercial:
-            if (variant < 40) {
+            if (variant < 25) {
               // High-rise
               const height = 1.5 + hash * 1.5;
               return (
@@ -204,7 +208,7 @@ const ProceduralBuilding = React.memo(({ type, baseColor, x, y, opacity = 1, tra
                   <mesh {...commonProps} material={accentMat} geometry={boxGeo} position={[0, height + 0.1, 0]} scale={[0.5, 0.2, 0.5]} />
                 </>
               );
-            } else if (variant < 70) {
+            } else if (variant < 50) {
               // Shop
               return (
                 <>
@@ -213,7 +217,7 @@ const ProceduralBuilding = React.memo(({ type, baseColor, x, y, opacity = 1, tra
                   <mesh {...commonProps} material={new THREE.MeshStandardMaterial({ color: hash > 0.5 ? '#ef4444' : '#3b82f6' })} geometry={boxGeo} position={[0, 0.55, 0.5]} scale={[0.9, 0.1, 0.2]} rotation={[Math.PI/6, 0, 0]} />
                 </>
               );
-            } else {
+            } else if (variant < 75) {
               // Corner store
                return (
                 <>
@@ -223,10 +227,27 @@ const ProceduralBuilding = React.memo(({ type, baseColor, x, y, opacity = 1, tra
                   <mesh {...commonProps} material={new THREE.MeshStandardMaterial({color: '#9ca3af'})} geometry={boxGeo} position={[0.2, 0.65, 0.2]} scale={[0.2, 0.1, 0.2]} />
                 </>
                )
+            } else {
+               // NEW: Twin Corporate Towers
+               return (
+                 <>
+                   {/* Base */}
+                   <mesh {...commonProps} material={mainMat} geometry={boxGeo} position={[0, 0.2, 0]} scale={[0.95, 0.4, 0.95]} />
+                   {/* Tower 1 */}
+                   <mesh {...commonProps} material={accentMat} geometry={boxGeo} position={[-0.2, 0.9, -0.2]} scale={[0.35, 1.4, 0.35]} />
+                   {/* Tower 2 */}
+                   <mesh {...commonProps} material={accentMat} geometry={boxGeo} position={[0.2, 0.7, 0.2]} scale={[0.35, 1.0, 0.35]} />
+                   {/* Bridge */}
+                   <mesh {...commonProps} material={roofMat} geometry={boxGeo} position={[0, 0.8, 0]} scale={[0.2, 0.1, 0.8]} rotation={[0, Math.PI/4, 0]} />
+                   {/* Windows */}
+                   <WindowBlock position={[-0.2, 1.0, -0.01]} scale={[0.25, 0.8, 0.05]} />
+                   <WindowBlock position={[0.2, 0.8, 0.39]} scale={[0.25, 0.6, 0.05]} />
+                 </>
+               )
             }
 
           case BuildingType.Industrial:
-            if (variant < 50) {
+            if (variant < 33) {
               // Factory
               return (
                 <>
@@ -236,7 +257,7 @@ const ProceduralBuilding = React.memo(({ type, baseColor, x, y, opacity = 1, tra
                   <SmokeStack position={[0.3, 0.4, 0.3]} />
                 </>
               );
-            } else {
+            } else if (variant < 66) {
               // Warehouse
               return (
                 <>
@@ -246,6 +267,25 @@ const ProceduralBuilding = React.memo(({ type, baseColor, x, y, opacity = 1, tra
                   <mesh {...commonProps} material={new THREE.MeshStandardMaterial({color: '#6b7280'})} geometry={boxGeo} position={[0.25, 0.7, 0]} scale={[0.05, 0.05, 0.5]} />
                 </>
               );
+            } else {
+              // NEW: Chemical Refinery
+              const tankColor = new THREE.Color(baseColor).offsetHSL(0, -0.2, 0.1);
+              const pipeMat = new THREE.MeshStandardMaterial({ color: '#64748b' });
+              return (
+                <>
+                  {/* Platform */}
+                  <mesh {...commonProps} material={mainMat} geometry={boxGeo} position={[0, 0.1, 0]} scale={[0.95, 0.2, 0.95]} />
+                  {/* Large Tank */}
+                  <mesh {...commonProps} material={new THREE.MeshStandardMaterial({color: tankColor})} geometry={cylinderGeo} position={[-0.25, 0.5, -0.25]} scale={[0.4, 0.8, 0.4]} />
+                  {/* Small Tank */}
+                  <mesh {...commonProps} material={new THREE.MeshStandardMaterial({color: tankColor})} geometry={cylinderGeo} position={[0.3, 0.4, 0.3]} scale={[0.25, 0.6, 0.25]} />
+                  {/* Pipes */}
+                  <mesh {...commonProps} material={pipeMat} geometry={boxGeo} position={[0, 0.4, 0]} scale={[0.8, 0.05, 0.05]} rotation={[0, Math.PI/4, 0]} />
+                  <mesh {...commonProps} material={pipeMat} geometry={boxGeo} position={[-0.25, 0.8, -0.25]} scale={[0.05, 0.4, 0.05]} />
+                  {/* Smoke */}
+                  <SmokeStack position={[-0.25, 0.9, -0.25]} />
+                </>
+              )
             }
 
           case BuildingType.Park:
@@ -533,8 +573,72 @@ const PopulationSystem = ({ population, grid }: { population: number, grid: Grid
     )
 };
 
-// Clouds & Birds
-const Cloud = ({ position, scale, speed }: { position: [number, number, number], scale: number, speed: number }) => {
+// --- Weather System ---
+
+const WeatherSystem = ({ weather }: { weather: WeatherType }) => {
+  const particleCount = weather === 'sunny' ? 0 : weather === 'rainy' ? 1000 : 500;
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
+  
+  // Initialize particles in a large box above the city
+  const particles = useMemo(() => {
+    return Array.from({ length: 1000 }).map(() => ({
+      x: getRandomRange(-20, 20),
+      y: getRandomRange(0, 20),
+      z: getRandomRange(-20, 20),
+      speed: getRandomRange(0.2, 0.5)
+    }));
+  }, []);
+
+  useFrame(() => {
+    if (!meshRef.current || weather === 'sunny') return;
+    
+    particles.forEach((p, i) => {
+      if (i >= particleCount) return;
+      
+      // Fall down
+      p.y -= p.speed;
+      if (weather === 'snowy') {
+        p.x += Math.sin(Date.now() * 0.001 + i) * 0.01; // Drift
+        p.y -= p.speed * 0.1; // Fall slower
+      }
+
+      // Reset
+      if (p.y < -1) {
+        p.y = 20;
+        p.x = getRandomRange(-20, 20);
+        p.z = getRandomRange(-20, 20);
+      }
+      
+      dummy.position.set(p.x, p.y, p.z);
+      
+      if (weather === 'rainy') {
+        dummy.scale.set(0.02, 0.4, 0.02);
+      } else {
+        dummy.scale.set(0.1, 0.1, 0.1);
+      }
+      
+      dummy.updateMatrix();
+      meshRef.current.setMatrixAt(i, dummy.matrix);
+    });
+    meshRef.current.instanceMatrix.needsUpdate = true;
+  });
+
+  if (weather === 'sunny') return null;
+
+  const mat = weather === 'rainy' 
+    ? new THREE.MeshBasicMaterial({ color: '#a1a1aa', transparent: true, opacity: 0.6 })
+    : new THREE.MeshBasicMaterial({ color: '#ffffff', transparent: true, opacity: 0.8 });
+
+  const geo = weather === 'rainy' ? boxGeo : sphereGeo;
+
+  return (
+    <instancedMesh ref={meshRef} args={[geo, mat, particleCount]} />
+  );
+};
+
+// Clouds & Birds (Modified for weather)
+const Cloud = ({ position, scale, speed, color }: { position: [number, number, number], scale: number, speed: number, color: string }) => {
     const group = useRef<THREE.Group>(null);
     useFrame((state, delta) => {
         if (group.current) {
@@ -552,7 +656,7 @@ const Cloud = ({ position, scale, speed }: { position: [number, number, number],
         <group ref={group} position={position} scale={scale}>
             {bubbles.map((b, i) => (
                 <mesh key={i} geometry={sphereGeo} position={b.pos} scale={b.scale} castShadow>
-                    <meshStandardMaterial color="white" flatShading opacity={0.9} transparent />
+                    <meshStandardMaterial color={color} flatShading opacity={0.9} transparent />
                 </mesh>
             ))}
         </group>
@@ -579,26 +683,35 @@ const Bird = ({ position, speed, offset }: { position: [number, number, number],
     )
 }
 
-const EnvironmentEffects = () => {
+const EnvironmentEffects = ({ weather }: { weather: WeatherType }) => {
+    const cloudColor = weather === 'sunny' ? 'white' : '#64748b'; // Gray for rain/snow
+    const birdVisible = weather !== 'rainy';
+
     return (
         <group raycast={() => null}>
              {/* Clouds */}
-            <Cloud position={[-12, 8, 4]} scale={1.5} speed={0.3} />
-            <Cloud position={[5, 9, -8]} scale={1.2} speed={0.5} />
-            <Cloud position={[15, 7, 10]} scale={1.8} speed={0.2} />
+            <Cloud position={[-12, 8, 4]} scale={1.5} speed={0.3} color={cloudColor} />
+            <Cloud position={[5, 9, -8]} scale={1.2} speed={0.5} color={cloudColor} />
+            <Cloud position={[15, 7, 10]} scale={1.8} speed={0.2} color={cloudColor} />
             
-            {/* Birds */}
-            <group position={[0, 0, 0]} scale={0.8}>
-                <Bird position={[0, 0, 10]} speed={0.6} offset={0} />
-                <Bird position={[0, 0, 10]} speed={0.6} offset={1.2} />
-                <Bird position={[0, 0, 10]} speed={0.6} offset={2.5} />
-            </group>
+            {/* Birds - hide in rain */}
+            {birdVisible && (
+              <group position={[0, 0, 0]} scale={0.8}>
+                  <Bird position={[0, 0, 10]} speed={0.6} offset={0} />
+                  <Bird position={[0, 0, 10]} speed={0.6} offset={1.2} />
+                  <Bird position={[0, 0, 10]} speed={0.6} offset={2.5} />
+              </group>
+            )}
 
             {/* Water */}
             <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.6, 0]} receiveShadow>
                 <planeGeometry args={[GRID_SIZE * 4, GRID_SIZE * 4]} />
-                <meshStandardMaterial color="#3b82f6" roughness={0.1} metalness={0.5} opacity={0.8} transparent />
+                <meshStandardMaterial color={weather === 'rainy' ? '#1e3a8a' : '#3b82f6'} roughness={0.1} metalness={0.5} opacity={0.8} transparent />
             </mesh>
+            
+            {/* Fog based on weather */}
+            {weather === 'rainy' && <fog attach="fog" args={['#374151', 10, 50]} />}
+            {weather === 'snowy' && <fog attach="fog" args={['#e0f2fe', 10, 40]} />}
         </group>
     )
 };
@@ -607,36 +720,123 @@ const EnvironmentEffects = () => {
 // --- 3. Main Map Component ---
 
 const RoadMarkings = React.memo(({ x, y, grid, yOffset }: { x: number; y: number; grid: Grid; yOffset: number }) => {
-  const lineMaterial = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fbbf24' }), []);
-  const lineGeo = useMemo(() => new THREE.PlaneGeometry(0.1, 0.5), []);
-
-  const hasUp = y > 0 && grid[y - 1][x].buildingType === BuildingType.Road;
-  const hasDown = y < GRID_SIZE - 1 && grid[y + 1][x].buildingType === BuildingType.Road;
-  const hasLeft = x > 0 && grid[y][x - 1].buildingType === BuildingType.Road;
-  const hasRight = x < GRID_SIZE - 1 && grid[y][x + 1].buildingType === BuildingType.Road;
-
-  const connections = [hasUp, hasDown, hasLeft, hasRight].filter(Boolean).length;
+  const lineMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#fbbf24', roughness: 0.8 }), []);
+  const whiteMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.8 }), []);
+  const trackMat = useMemo(() => new THREE.MeshBasicMaterial({ color: '#000000', transparent: true, opacity: 0.15 }), []);
+  const manholeMat = useMemo(() => new THREE.MeshStandardMaterial({ color: '#4b5563', roughness: 0.8, metalness: 0.6 }), []);
+  const manholeCircleGeo = useMemo(() => new THREE.CircleGeometry(0.12, 12), []);
   
-  // Isolated road piece: draw a default line
-  if (connections === 0) {
-    return (
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, yOffset, 0]} geometry={lineGeo} material={lineMaterial} />
-    );
-  }
+  // Geometries
+  const straightGeo = useMemo(() => new THREE.PlaneGeometry(0.12, 1), []);
+  const halfGeo = useMemo(() => new THREE.PlaneGeometry(0.12, 0.6), []); // Center to edge
+  const stopGeo = useMemo(() => new THREE.PlaneGeometry(0.4, 0.1), []); // White bar
+  
+  // Curve: Ring segment. Center at corner.
+  // Ring radius 0.5. Thickness 0.12.
+  const curveGeo = useMemo(() => new THREE.RingGeometry(0.44, 0.56, 24, 1, Math.PI, Math.PI/2), []);
+  
+  // Tracks
+  const trackStraightGeo = useMemo(() => new THREE.PlaneGeometry(0.1, 1), []);
+  const trackPatchGeo = useMemo(() => new THREE.CircleGeometry(0.35, 12), []); // Intersection dirt
+
+  // Helpers
+  const isRoad = (gx: number, gy: number) => {
+    if (gx < 0 || gx >= GRID_SIZE || gy < 0 || gy >= GRID_SIZE) return false;
+    return grid[gy][gx].buildingType === BuildingType.Road;
+  };
+
+  const u = isRoad(x, y - 1);
+  const d = isRoad(x, y + 1);
+  const l = isRoad(x - 1, y);
+  const r = isRoad(x + 1, y);
+
+  const neighbors = (u?8:0) + (d?4:0) + (l?2:0) + (r?1:0);
+  const neighborCount = (u?1:0) + (d?1:0) + (l?1:0) + (r?1:0);
+  
+  const hash = getHash(x, y);
+
+  // Manholes only on straight or dead ends, not intersections (usually)
+  const showManhole = hash > 0.9 && neighborCount <= 2; 
 
   return (
     <group rotation={[-Math.PI / 2, 0, 0]} position={[0, yOffset, 0]}>
-      {/* Center point for junctions to fill the gap, lifted slightly to avoid z-fighting */}
-      {(hasUp || hasDown) && (hasLeft || hasRight) && (
-        <mesh position={[0, 0, 0.005]} material={lineMaterial}>
-           <planeGeometry args={[0.12, 0.12]} />
-        </mesh>
+      {/* 1. Tracks/Dirt Layer (Lowest) */}
+      {(neighbors === 12 || neighbors === 3 || neighborCount === 1) && (
+        // Straight / Dead End
+        <>
+           {(neighbors & 12) === 12 && ( // Vertical
+             <>
+               <mesh position={[-0.2, 0, 0.001]} geometry={trackStraightGeo} material={trackMat} />
+               <mesh position={[0.2, 0, 0.001]} geometry={trackStraightGeo} material={trackMat} />
+             </>
+           )}
+           {(neighbors & 3) === 3 && ( // Horizontal
+             <>
+               <mesh position={[0, -0.2, 0.001]} rotation={[0,0,Math.PI/2]} geometry={trackStraightGeo} material={trackMat} />
+               <mesh position={[0, 0.2, 0.001]} rotation={[0,0,Math.PI/2]} geometry={trackStraightGeo} material={trackMat} />
+             </>
+           )}
+           {/* Dead ends handled partially by above or default */}
+        </>
+      )}
+      
+      {neighborCount > 2 && (
+        // Intersection dirt patch
+        <mesh position={[0, 0, 0.001]} geometry={trackPatchGeo} material={trackMat} opacity={0.3} />
       )}
 
-      {hasUp && <mesh position={[0, 0.25, 0]} geometry={lineGeo} material={lineMaterial} />}
-      {hasDown && <mesh position={[0, -0.25, 0]} geometry={lineGeo} material={lineMaterial} />}
-      {hasLeft && <mesh position={[-0.25, 0, 0]} rotation={[0, 0, Math.PI / 2]} geometry={lineGeo} material={lineMaterial} />}
-      {hasRight && <mesh position={[0.25, 0, 0]} rotation={[0, 0, Math.PI / 2]} geometry={lineGeo} material={lineMaterial} />}
+      {/* 2. Yellow Lines / Markings */}
+      
+      {/* Straight Vertical */}
+      {neighbors === 12 && <mesh position={[0, 0, 0.005]} geometry={straightGeo} material={lineMat} />}
+      
+      {/* Straight Horizontal */}
+      {neighbors === 3 && <mesh position={[0, 0, 0.005]} rotation={[0,0,Math.PI/2]} geometry={straightGeo} material={lineMat} />}
+
+      {/* Corners */}
+      {neighbors === 9 && ( // U + R
+         <mesh position={[0.5, 0.5, 0.005]} geometry={curveGeo} material={lineMat} />
+      )}
+      {neighbors === 10 && ( // U + L
+         <mesh position={[-0.5, 0.5, 0.005]} rotation={[0,0,Math.PI/2]} geometry={curveGeo} material={lineMat} />
+      )}
+      {neighbors === 6 && ( // D + L
+         <mesh position={[-0.5, -0.5, 0.005]} rotation={[0,0,Math.PI]} geometry={curveGeo} material={lineMat} />
+      )}
+      {neighbors === 5 && ( // D + R
+         <mesh position={[0.5, -0.5, 0.005]} rotation={[0,0,-Math.PI/2]} geometry={curveGeo} material={lineMat} />
+      )}
+
+      {/* Intersections (T and Cross) - Draw Stop Lines */}
+      {neighborCount > 2 && (
+         <>
+            {u && <mesh position={[0, 0.35, 0.005]} geometry={stopGeo} material={whiteMat} />}
+            {d && <mesh position={[0, -0.35, 0.005]} geometry={stopGeo} material={whiteMat} />}
+            {l && <mesh position={[-0.35, 0, 0.005]} rotation={[0,0,Math.PI/2]} geometry={stopGeo} material={whiteMat} />}
+            {r && <mesh position={[0.35, 0, 0.005]} rotation={[0,0,Math.PI/2]} geometry={stopGeo} material={whiteMat} />}
+         </>
+      )}
+
+      {/* Dead Ends - Cap lines */}
+      {neighborCount === 1 && (
+        <>
+           {u && <mesh position={[0, 0.2, 0.005]} geometry={halfGeo} material={lineMat} />}
+           {d && <mesh position={[0, -0.2, 0.005]} geometry={halfGeo} material={lineMat} />}
+           {l && <mesh position={[-0.2, 0, 0.005]} rotation={[0,0,Math.PI/2]} geometry={halfGeo} material={lineMat} />}
+           {r && <mesh position={[0.2, 0, 0.005]} rotation={[0,0,Math.PI/2]} geometry={halfGeo} material={lineMat} />}
+        </>
+      )}
+
+      {/* Manhole */}
+      {showManhole && (
+          <group position={[0, 0, 0.006]}>
+            <mesh geometry={manholeCircleGeo} material={manholeMat} />
+             <mesh position={[0,0,0.001]}>
+                <ringGeometry args={[0.08, 0.09, 12]} />
+                <meshBasicMaterial color="#374151" />
+             </mesh>
+          </group>
+      )}
     </group>
   );
 });
@@ -710,9 +910,10 @@ interface IsoMapProps {
   onTileClick: (x: number, y: number) => void;
   hoveredTool: BuildingType;
   population: number;
+  weather: WeatherType;
 }
 
-const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, population }) => {
+const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, population, weather }) => {
   const [hoveredTile, setHoveredTile] = useState<{x: number, y: number} | null>(null);
 
   const handleHover = useCallback((x: number, y: number) => {
@@ -730,8 +931,14 @@ const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, populat
   
   const previewPos = hoveredTile ? gridToWorld(hoveredTile.x, hoveredTile.y) : [0,0,0];
 
+  // Dynamic Lighting props
+  const lightIntensity = weather === 'sunny' ? 2 : weather === 'rainy' ? 0.5 : 1;
+  const lightColor = weather === 'sunny' ? '#fffbeb' : weather === 'rainy' ? '#e2e8f0' : '#f0f9ff';
+  const ambientIntensity = weather === 'sunny' ? 0.5 : 0.8;
+  const bgClass = weather === 'sunny' ? 'bg-sky-900' : weather === 'rainy' ? 'bg-slate-900' : 'bg-slate-800';
+
   return (
-    <div className="absolute inset-0 bg-sky-900 touch-none">
+    <div className={`absolute inset-0 touch-none transition-colors duration-1000 ${bgClass}`}>
       <Canvas shadows dpr={[1, 1.5]} gl={{ antialias: true }}>
         <OrthographicCamera makeDefault zoom={45} position={[20, 20, 20]} near={-100} far={200} />
         
@@ -745,20 +952,21 @@ const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, populat
           target={[0,-0.5,0]}
         />
 
-        <ambientLight intensity={0.5} color="#cceeff" />
+        <ambientLight intensity={ambientIntensity} color="#cceeff" />
         <directionalLight
           castShadow
           position={[15, 20, 10]}
-          intensity={2}
-          color="#fffbeb"
+          intensity={lightIntensity}
+          color={lightColor}
           shadow-mapSize={[2048, 2048]}
           shadow-camera-left={-15} shadow-camera-right={15}
           shadow-camera-top={15} shadow-camera-bottom={-15}
         >
         </directionalLight>
-        <Environment preset="city" />
+        <Environment preset={weather === 'sunny' ? 'city' : 'park'} />
 
-        <EnvironmentEffects />
+        <EnvironmentEffects weather={weather} />
+        <WeatherSystem weather={weather} />
 
         <group>
           {grid.map((row, y) =>

@@ -21,7 +21,8 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart, onLoad }) => {
         const data = JSON.parse(saveStr);
         setHasSave(true);
         const happy = data.stats.happiness ?? 100;
-        setSaveInfo(`Day ${data.stats.day} • $${data.stats.money.toLocaleString()} • Pop: ${data.stats.population} • Happy: ${happy}%`);
+        const pollution = data.stats.pollution ?? 0;
+        setSaveInfo(`Day ${data.stats.day} • $${data.stats.money.toLocaleString()} • Pop: ${data.stats.population} • Happy: ${happy}% • Pol: ${pollution}`);
       }
     } catch (e) {
       console.error("Error checking save:", e);
@@ -98,18 +99,6 @@ const StartScreen: React.FC<StartScreenProps> = ({ onStart, onLoad }) => {
             >
               {hasSave ? 'Start New City' : 'Start Building'}
             </button>
-
-            <div className="mt-8 text-center">
-                <a 
-                    href="https://x.com/ammaar" 
-                    target="_blank" 
-                    rel="noreferrer" 
-                    className="inline-flex items-center gap-2 text-xs text-slate-500 hover:text-cyan-400 transition-colors font-mono group"
-                >
-                    <span>Created by</span>
-                    <span className="font-bold group-hover:underline decoration-cyan-500/50 underline-offset-2">@ammaar</span>
-                </a>
-            </div>
         </div>
       </div>
     </div>

@@ -103,6 +103,17 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
   const happinessColor = stats.happiness > 75 ? 'text-green-400' : stats.happiness > 40 ? 'text-yellow-400' : 'text-red-500';
   const happinessIcon = stats.happiness > 75 ? '😊' : stats.happiness > 40 ? '😐' : '😡';
 
+  // Determine pollution color and text
+  const pollutionColor = stats.pollution < 30 ? 'text-green-400' : stats.pollution < 70 ? 'text-yellow-400' : 'text-purple-400';
+  const pollutionIcon = '🌫️'; // Fog/Pollution icon
+
+  // Weather Icons
+  const weatherIcons = {
+    sunny: '☀️',
+    rainy: '🌧️',
+    snowy: '❄️'
+  };
+
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2 md:p-4 font-sans z-10">
       
@@ -110,35 +121,45 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
       <div className="flex flex-col md:flex-row md:justify-between md:items-start pointer-events-auto gap-2 w-full max-w-full">
         
         {/* Stats */}
-        <div className="bg-gray-900/90 text-white p-2 md:p-3 rounded-xl border border-gray-700 shadow-2xl backdrop-blur-md flex gap-3 md:gap-6 items-center justify-between md:justify-start w-full md:w-auto relative">
+        <div className="bg-gray-900/90 text-white p-2 md:p-3 rounded-xl border border-gray-700 shadow-2xl backdrop-blur-md flex gap-3 md:gap-6 items-center justify-between md:justify-start w-full md:w-auto relative flex-wrap">
           <div className="flex flex-col">
             <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Treasury</span>
             <span className="text-lg md:text-2xl font-black text-green-400 font-mono drop-shadow-md">${stats.money.toLocaleString()}</span>
           </div>
-          <div className="w-px h-6 md:h-8 bg-gray-700"></div>
+          <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
           <div className="flex flex-col">
             <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Citizens</span>
             <span className="text-base md:text-xl font-bold text-blue-300 font-mono drop-shadow-md">{stats.population.toLocaleString()}</span>
           </div>
-          <div className="w-px h-6 md:h-8 bg-gray-700"></div>
+          <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
            <div className="flex flex-col">
             <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Happiness</span>
             <span className={`text-base md:text-xl font-bold font-mono drop-shadow-md flex items-center gap-1 ${happinessColor}`}>
               <span className="text-lg">{happinessIcon}</span> {stats.happiness}%
             </span>
           </div>
-          <div className="w-px h-6 md:h-8 bg-gray-700"></div>
-          <div className="flex flex-col items-end">
+          <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
+           <div className="flex flex-col">
+            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Pollution</span>
+            <span className={`text-base md:text-xl font-bold font-mono drop-shadow-md flex items-center gap-1 ${pollutionColor}`}>
+              <span className="text-lg">{pollutionIcon}</span> {stats.pollution}
+            </span>
+          </div>
+          <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
+          <div className="flex flex-col items-end ml-auto md:ml-0">
              <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Day</span>
-             <span className="text-base md:text-lg font-bold text-white font-mono">{stats.day}</span>
+             <span className="text-base md:text-lg font-bold text-white font-mono flex items-center gap-2">
+                {stats.day}
+                <span title={stats.weather} className="text-xl">{weatherIcons[stats.weather]}</span>
+             </span>
           </div>
           
-          <div className="w-px h-6 md:h-8 bg-gray-700 ml-2"></div>
+          <div className="w-px h-6 md:h-8 bg-gray-700 ml-2 hidden md:block"></div>
           
           <button 
             onClick={handleSaveClick}
             className={`
-              flex items-center justify-center p-2 rounded-lg transition-all duration-300
+              flex items-center justify-center p-2 rounded-lg transition-all duration-300 ml-auto md:ml-0
               ${saveStatus === 'saved' ? 'bg-green-500/20 text-green-400 border border-green-500/50' : 'hover:bg-gray-800 text-gray-400 hover:text-white border border-transparent'}
             `}
             title="Save Game"
@@ -154,7 +175,7 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
         </div>
 
         {/* AI Goal Panel */}
-        <div className={`w-full md:w-80 bg-indigo-900/90 text-white rounded-xl border-2 border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.4)] backdrop-blur-md overflow-hidden transition-all ${!aiEnabled ? 'opacity-80 grayscale-[0.5]' : ''}`}>
+        <div className={`w-full md:w-80 bg-indigo-900/90 text-white rounded-xl border-2 border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.4)] backdrop-blur-md overflow-hidden transition-all ${!aiEnabled ? 'opacity-80 grayscale-[0.5]' : ''} mt-2 md:mt-0`}>
           <div className="bg-indigo-800/80 px-3 md:px-4 py-1.5 md:py-2 flex justify-between items-center border-b border-indigo-600">
             <span className="font-bold uppercase text-[10px] md:text-xs tracking-widest flex items-center gap-2 shadow-sm">
               {aiEnabled ? (

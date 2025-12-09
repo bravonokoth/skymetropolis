@@ -31,11 +31,15 @@ export interface TileData {
 
 export type Grid = TileData[][];
 
+export type WeatherType = 'sunny' | 'rainy' | 'snowy';
+
 export interface CityStats {
   money: number;
   population: number;
   day: number;
   happiness: number;
+  pollution: number;
+  weather: WeatherType;
 }
 
 export interface AIGoal {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Grid, TileData, BuildingType, CityStats, AIGoal, NewsItem } from './types';
+import { Grid, TileData, BuildingType, CityStats, AIGoal, NewsItem, WeatherType } from './types';
 import { GRID_SIZE, BUILDINGS, TICK_RATE_MS, INITIAL_MONEY } from './constants';
 import IsoMap from './components/IsoMap';
 import UIOverlay from './components/UIOverlay';
@@ -35,7 +35,14 @@ function App() {
   const [aiEnabled, setAiEnabled] = useState(true);
 
   const [grid, setGrid] = useState<Grid>(createInitialGrid);
-  const [stats, setStats] = useState<CityStats>({ money: INITIAL_MONEY, population: 0, day: 1, happiness: 100 });
+  const [stats, setStats] = useState<CityStats>({ 
+    money: INITIAL_MONEY, 
+    population: 0, 
+    day: 1, 
+    happiness: 100,
+    pollution: 0,
+    weather: 'sunny'
+  });
   const [selectedTool, setSelectedTool] = useState<BuildingType>(BuildingType.Road);
   
   // --- AI State ---
@@ -111,8 +118,13 @@ function App() {
         const gameState = JSON.parse(saveStr);
         // Restore state
         setGrid(gameState.grid);
-        // Ensure happiness exists for older saves
-        setStats({ ...gameState.stats, happiness: gameState.stats.happiness ?? 100 });
+        // Ensure properties exist for older saves
+        setStats({ 
+          ...gameState.stats, 
+          happiness: gameState.stats.happiness ?? 100,
+          pollution: gameState.stats.pollution ?? 0,
+          weather: gameState.stats.weather ?? 'sunny'
+        });
         setCurrentGoal(gameState.currentGoal);
         setNewsFeed(gameState.newsFeed);
         setAiEnabled(gameState.aiEnabled);
@@ -172,16 +184,24 @@ function App() {
         if (newPop > maxPop) newPop = maxPop; // limit
         if (resCount === 0 && prev.population > 0) newPop = Math.max(0, prev.population - 5); // people leave if no homes
 
-        // Calculate Happiness
-        let newHappiness = 60; // Base baseline
-        const parkCount = buildingCounts[BuildingType.Park] || 0;
+        // -- Pollution Calculation --
         const indCount = buildingCounts[BuildingType.Industrial] || 0;
-
-        // Parks boost happiness (+5 each, up to 40)
-        newHappiness += Math.min(parkCount * 5, 40);
+        const parkCount = buildingCounts[BuildingType.Park] || 0;
         
-        // Pollution reduces happiness (-4 each, up to 40)
-        newHappiness -= Math.min(indCount * 4, 40);
+        // Factories create pollution, Parks reduce it
+        // 1 Factory = +10 pollution
+        // 1 Park = -5 pollution
+        let currentPollution = (indCount * 10) - (parkCount * 5);
+        currentPollution = Math.max(0, Math.min(100, currentPollution));
+
+        // -- Happiness Calculation --
+        let newHappiness = 60; // Base baseline
+        
+        // Parks boost happiness (+5 each, up to 30)
+        newHappiness += Math.min(parkCount * 5, 30);
+        
+        // Pollution reduces happiness significantly
+        newHappiness -= Math.floor(currentPollution * 0.8);
         
         // Overcrowding penalty
         if (resCount > 0 && newPop > maxPop * 0.9) {
@@ -196,14 +216,32 @@ function App() {
         // Wealth bonus (small)
         if (prev.money > 2000) newHappiness += 5;
 
-        // Clamp
+        // Weather effects on happiness
+        if (prev.weather === 'rainy') newHappiness -= 2;
+        if (prev.weather === 'sunny') newHappiness += 2;
+        // Snow is neutral-ish, maybe slightly negative due to cold
+        if (prev.weather === 'snowy') newHappiness -= 1;
+
+        // Clamp Happiness
         newHappiness = Math.max(0, Math.min(100, Math.floor(newHappiness)));
+
+        // -- Weather Update Logic --
+        // 5% chance to change weather each tick
+        let currentWeather = prev.weather;
+        if (Math.random() < 0.05) {
+            const rand = Math.random();
+            if (rand < 0.6) currentWeather = 'sunny';
+            else if (rand < 0.85) currentWeather = 'rainy';
+            else currentWeather = 'snowy';
+        }
 
         const newStats = {
           money: prev.money + dailyIncome,
           population: newPop,
           day: prev.day + 1,
           happiness: newHappiness,
+          pollution: currentPollution,
+          weather: currentWeather
         };
         
         // 3. Check Goal Completion
@@ -304,6 +342,7 @@ function App() {
         onTileClick={handleTileClick} 
         hoveredTool={selectedTool}
         population={stats.population}
+        weather={stats.weather}
       />
       
       {/* Start Screen Overlay */}

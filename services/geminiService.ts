@@ -57,13 +57,15 @@ export const generateCityGoal = async (stats: CityStats, grid: Grid): Promise<AI
     Money: $${stats.money}
     Population: ${stats.population}
     Happiness: ${stats.happiness} (0-100)
+    Pollution: ${stats.pollution} (0-100)
+    Weather: ${stats.weather}
     Buildings: ${JSON.stringify(counts)}
     Building Costs/Stats: ${JSON.stringify(
       Object.values(BUILDINGS).filter(b => b.type !== BuildingType.None).map(b => ({type: b.type, cost: b.cost, pop: b.popGen, income: b.incomeGen}))
     )}
   `;
 
-  const prompt = `You are the AI City Advisor for a simulation game. Based on the current city stats, generate a challenging but achievable short-term goal for the player to help the city grow. Return JSON.`;
+  const prompt = `You are the AI City Advisor for a simulation game. Based on the current city stats and weather, generate a challenging but achievable short-term goal for the player to help the city grow. Return JSON.`;
 
   try {
     const response = await ai.models.generateContent({
@@ -103,8 +105,8 @@ const newsSchema = {
 export const generateNewsEvent = async (stats: CityStats, recentAction: string | null): Promise<NewsItem | null> => {
   // @google/genai-api-key-fix: The API key must be obtained exclusively from the environment variable `process.env.API_KEY`. Do not add checks for its existence.
 
-  const context = `City Stats - Pop: ${stats.population}, Money: ${stats.money}, Day: ${stats.day}, Happiness: ${stats.happiness}. ${recentAction ? `Recent Action: ${recentAction}` : ''}`;
-  const prompt = "Generate a very short, isometric-sim-city style news headline based on the city state. Can be funny, cynical, or celebratory.";
+  const context = `City Stats - Pop: ${stats.population}, Money: ${stats.money}, Day: ${stats.day}, Happiness: ${stats.happiness}, Pollution: ${stats.pollution}, Weather: ${stats.weather}. ${recentAction ? `Recent Action: ${recentAction}` : ''}`;
+  const prompt = "Generate a very short, isometric-sim-city style news headline based on the city state and weather. Can be funny, cynical, or celebratory.";
 
   try {
     const response = await ai.models.generateContent({
