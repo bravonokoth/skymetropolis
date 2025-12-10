@@ -60,17 +60,17 @@ const ToolButton: React.FC<{
       className={`
         relative flex flex-col items-center justify-center rounded-lg border-2 transition-all shadow-lg backdrop-blur-sm flex-shrink-0
         w-14 h-14 md:w-16 md:h-16
-        ${isSelected ? 'border-white bg-white/20 scale-110 z-10' : 'border-gray-600 bg-gray-900/80 hover:bg-gray-800'}
+        ${isSelected ? 'border-amber-400 bg-amber-900/40 scale-110 z-10' : 'border-stone-600 bg-stone-900/80 hover:bg-stone-800'}
         ${!isBulldoze && !canAfford ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
       `}
     >
       <div className="w-6 h-6 md:w-8 md:h-8 rounded mb-0.5 md:mb-1 border border-black/30 shadow-inner flex items-center justify-center overflow-hidden" style={{ backgroundColor: isBulldoze ? 'transparent' : bgColor }}>
         {isBulldoze && <div className="w-full h-full bg-red-600 text-white flex justify-center items-center font-bold text-base md:text-lg">✕</div>}
-        {type === BuildingType.Road && <div className="w-full h-2 bg-gray-800 transform -rotate-45"></div>}
+        {type === BuildingType.Road && <div className="w-full h-2 bg-stone-800 transform -rotate-45"></div>}
       </div>
-      <span className="text-[8px] md:text-[10px] font-bold text-white uppercase tracking-wider drop-shadow-md leading-none text-center px-1">{config.name}</span>
+      <span className="text-[8px] md:text-[10px] font-bold text-stone-200 uppercase tracking-wider drop-shadow-md leading-none text-center px-1">{config.name}</span>
       {config.cost > 0 && (
-        <span className={`text-[8px] md:text-[10px] font-mono leading-none ${canAfford ? 'text-green-300' : 'text-red-400'}`}>${config.cost}</span>
+        <span className={`text-[8px] md:text-[10px] font-mono leading-none ${canAfford ? 'text-green-400' : 'text-red-400'}`}>${config.cost}</span>
       )}
     </button>
   );
@@ -86,13 +86,13 @@ const BudgetSlider: React.FC<{
   return (
     <div className="flex flex-col gap-1 mb-3">
       <div className="flex justify-between items-center text-xs">
-         <span className="flex items-center gap-2 font-bold text-gray-300">
+         <span className="flex items-center gap-2 font-bold text-stone-300">
              <span>{icon}</span> {label}
          </span>
          <span className={`font-mono font-bold ${colorClass}`}>{value}%</span>
       </div>
       <div className="flex items-center gap-2">
-         <span className="text-[10px] text-gray-500 w-6">50%</span>
+         <span className="text-[10px] text-stone-500 w-6">50%</span>
          <input 
             type="range" 
             min="50" 
@@ -100,9 +100,9 @@ const BudgetSlider: React.FC<{
             step="5"
             value={value}
             onChange={(e) => onChange(Number(e.target.value))}
-            className="flex-1 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            className="flex-1 h-1.5 bg-stone-700 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-amber-500/50"
          />
-         <span className="text-[10px] text-gray-500 w-6 text-right">150%</span>
+         <span className="text-[10px] text-stone-500 w-6 text-right">150%</span>
       </div>
     </div>
   );
@@ -143,7 +143,6 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
     setShowSaveConfirmation(false);
     setSaveStatus('saving');
     onSave();
-    // Simulate short delay for feedback
     setTimeout(() => {
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
@@ -177,8 +176,8 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
   const wRatio = stats.waterDemand > 0 ? stats.waterSupply / stats.waterDemand : 1;
   const gRatio = stats.goodsDemand > 0 ? stats.goodsSupply / stats.goodsDemand : 1;
   
-  const powerColor = pRatio >= 1 ? 'text-yellow-400' : 'text-red-500 animate-pulse';
-  const waterColor = wRatio >= 1 ? 'text-blue-400' : 'text-red-500 animate-pulse';
+  const powerColor = pRatio >= 1 ? 'text-amber-400' : 'text-red-500 animate-pulse';
+  const waterColor = wRatio >= 1 ? 'text-cyan-400' : 'text-red-500 animate-pulse';
   const goodsColor = gRatio >= 1 ? 'text-orange-300' : 'text-red-500 animate-pulse';
 
   // Service colors
@@ -192,39 +191,39 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
       {/* Top Bar: Stats & Goal */}
       <div className="flex flex-col md:flex-row md:justify-between md:items-start pointer-events-auto gap-2 w-full max-w-full">
         
-        {/* Stats */}
-        <div className="bg-gray-900/90 text-white p-2 md:p-3 rounded-xl border border-gray-700 shadow-2xl backdrop-blur-md flex gap-2 md:gap-4 items-center justify-between md:justify-start w-full md:w-auto relative flex-wrap">
+        {/* Stats - Warm dark theme */}
+        <div className="bg-stone-900/90 text-stone-100 p-2 md:p-3 rounded-xl border border-stone-700 shadow-2xl backdrop-blur-md flex gap-2 md:gap-4 items-center justify-between md:justify-start w-full md:w-auto relative flex-wrap">
           <div className="flex flex-col relative group cursor-help">
-            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Treasury</span>
-            <span className="text-lg md:text-2xl font-black text-green-400 font-mono drop-shadow-md">${Math.floor(stats.money).toLocaleString()}</span>
+            <span className="text-[8px] md:text-[10px] text-stone-400 uppercase font-bold tracking-widest">Treasury</span>
+            <span className="text-lg md:text-2xl font-black text-amber-400 font-mono drop-shadow-md">${Math.floor(stats.money).toLocaleString()}</span>
             
             {/* Quick Budget Button overlay/next to it */}
             <button 
                 onClick={() => setShowBudgetModal(true)}
-                className="absolute -top-1 -right-4 p-1 hover:bg-gray-700 rounded-full transition-colors"
+                className="absolute -top-1 -right-4 p-1 hover:bg-stone-700 rounded-full transition-colors"
                 title="Manage Budget"
             >
                 <span className="text-xs">⚙️</span>
             </button>
           </div>
-          <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
+          <div className="w-px h-6 md:h-8 bg-stone-700 hidden md:block"></div>
           <div className="flex flex-col">
-            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Pop</span>
-            <span className="text-base md:text-xl font-bold text-blue-300 font-mono drop-shadow-md">{stats.population.toLocaleString()}</span>
+            <span className="text-[8px] md:text-[10px] text-stone-400 uppercase font-bold tracking-widest">Pop</span>
+            <span className="text-base md:text-xl font-bold text-sky-300 font-mono drop-shadow-md">{stats.population.toLocaleString()}</span>
           </div>
-          <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
+          <div className="w-px h-6 md:h-8 bg-stone-700 hidden md:block"></div>
            <div className="flex flex-col">
-            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Happy</span>
+            <span className="text-[8px] md:text-[10px] text-stone-400 uppercase font-bold tracking-widest">Happy</span>
             <span className={`text-base md:text-xl font-bold font-mono drop-shadow-md flex items-center gap-1 ${happinessColor}`}>
               <span className="text-lg">{happinessIcon}</span> {stats.happiness}%
             </span>
           </div>
           
-          <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
+          <div className="w-px h-6 md:h-8 bg-stone-700 hidden md:block"></div>
 
            {/* Utility & Goods Stats */}
            <div className="flex flex-col items-center">
-            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Res</span>
+            <span className="text-[8px] md:text-[10px] text-stone-400 uppercase font-bold tracking-widest">Res</span>
             <div className="flex gap-2">
                 <span className={`text-base font-bold font-mono drop-shadow-md flex items-center ${powerColor}`} title={`Power: ${Math.floor(stats.powerSupply)}/${stats.powerDemand}`}>
                   ⚡
@@ -238,11 +237,11 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             </div>
           </div>
           
-          <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
+          <div className="w-px h-6 md:h-8 bg-stone-700 hidden md:block"></div>
 
           {/* Service Stats */}
           <div className="flex flex-col items-center">
-            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Svcs</span>
+            <span className="text-[8px] md:text-[10px] text-stone-400 uppercase font-bold tracking-widest">Svcs</span>
             <div className="flex gap-2">
                  <span className={`text-base font-bold font-mono drop-shadow-md flex items-center ${eduColor}`} title={`Education: ${stats.educationCoverage}%`}>
                   🎓
@@ -256,10 +255,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             </div>
           </div>
 
-          <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
+          <div className="w-px h-6 md:h-8 bg-stone-700 hidden md:block"></div>
           
           <div className="flex flex-col">
-             <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Env</span>
+             <span className="text-[8px] md:text-[10px] text-stone-400 uppercase font-bold tracking-widest">Env</span>
              <div className="flex gap-2">
                 <span className={`text-base font-bold font-mono drop-shadow-md flex items-center gap-1 ${pollutionColor}`} title={`Pollution: ${stats.pollution}`}>
                   {pollutionIcon}
@@ -270,10 +269,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
              </div>
           </div>
           
-          <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
+          <div className="w-px h-6 md:h-8 bg-stone-700 hidden md:block"></div>
           
           <div className="flex flex-col items-end ml-auto md:ml-0">
-             <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Day</span>
+             <span className="text-[8px] md:text-[10px] text-stone-400 uppercase font-bold tracking-widest">Day</span>
              <span className="text-base md:text-lg font-bold text-white font-mono flex items-center gap-2">
                 {stats.day}
                 <span title={stats.weather} className="text-xl">{weatherIcons[stats.weather]}</span>
@@ -284,7 +283,7 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             onClick={handleSaveClick}
             className={`
               flex items-center justify-center p-2 rounded-lg transition-all duration-300 ml-auto md:ml-0 border border-transparent
-              ${saveStatus === 'saved' ? 'bg-green-500/20 text-green-400 border-green-500/50' : 'hover:bg-gray-800 text-gray-400 hover:text-white'}
+              ${saveStatus === 'saved' ? 'bg-green-600/20 text-green-400 border-green-600/50' : 'hover:bg-stone-800 text-stone-400 hover:text-white'}
             `}
             title="Save Game"
           >
@@ -298,14 +297,14 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
           </button>
         </div>
 
-        {/* AI Goal Panel */}
-        <div className={`w-full md:w-80 bg-indigo-900/90 text-white rounded-xl border-2 border-indigo-500/50 shadow-[0_0_20px_rgba(99,102,241,0.4)] backdrop-blur-md overflow-hidden transition-all ${!aiEnabled ? 'opacity-80 grayscale-[0.5]' : ''} mt-2 md:mt-0`}>
-          <div className="bg-indigo-800/80 px-3 md:px-4 py-1.5 md:py-2 flex justify-between items-center border-b border-indigo-600">
+        {/* AI Goal Panel - Warm Accents */}
+        <div className={`w-full md:w-80 bg-stone-900/90 text-white rounded-xl border-2 border-amber-600/50 shadow-[0_0_20px_rgba(245,158,11,0.2)] backdrop-blur-md overflow-hidden transition-all ${!aiEnabled ? 'opacity-80 grayscale-[0.5]' : ''} mt-2 md:mt-0`}>
+          <div className="bg-stone-800/80 px-3 md:px-4 py-1.5 md:py-2 flex justify-between items-center border-b border-stone-700">
             <span className="font-bold uppercase text-[10px] md:text-xs tracking-widest flex items-center gap-2 shadow-sm">
               {aiEnabled ? (
                 <>
-                  <span className={`w-2 h-2 rounded-full ${isGeneratingGoal ? 'bg-yellow-400 animate-ping' : 'bg-cyan-400 animate-pulse'}`}></span>
-                  AI Advisor
+                  <span className={`w-2 h-2 rounded-full ${isGeneratingGoal ? 'bg-yellow-400 animate-ping' : 'bg-amber-400 animate-pulse'}`}></span>
+                  Advisor
                 </>
               ) : (
                 <>
@@ -321,16 +320,16 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
             {aiEnabled ? (
               currentGoal ? (
                 <>
-                  <p className="text-xs md:text-sm font-medium text-indigo-100 mb-2 md:mb-3 leading-tight drop-shadow">"{currentGoal.description}"</p>
+                  <p className="text-xs md:text-sm font-medium text-amber-50 mb-2 md:mb-3 leading-tight drop-shadow">"{currentGoal.description}"</p>
                   
-                  <div className="flex justify-between items-center mt-1 md:mt-2 bg-indigo-950/60 p-1.5 md:p-2 rounded-lg border border-indigo-700/50">
-                    <div className="text-[10px] md:text-xs text-gray-300">
+                  <div className="flex justify-between items-center mt-1 md:mt-2 bg-stone-950/60 p-1.5 md:p-2 rounded-lg border border-stone-700/50">
+                    <div className="text-[10px] md:text-xs text-stone-300">
                       Goal: <span className="font-mono font-bold text-white">
                         {currentGoal.targetType === 'building_count' ? BUILDINGS[currentGoal.buildingType!].name : 
                          currentGoal.targetType === 'money' ? '$' : 'Pop.'} {currentGoal.targetValue}
                       </span>
                     </div>
-                    <div className="text-[10px] md:text-xs text-yellow-300 font-bold font-mono bg-yellow-900/50 px-2 py-0.5 rounded border border-yellow-600/50">
+                    <div className="text-[10px] md:text-xs text-amber-300 font-bold font-mono bg-amber-950/50 px-2 py-0.5 rounded border border-amber-600/50">
                       +${currentGoal.reward}
                     </div>
                   </div>
@@ -338,15 +337,15 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                   {currentGoal.completed && (
                     <button
                       onClick={onClaimReward}
-                      className="mt-2 md:mt-3 w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold py-1.5 md:py-2 px-4 rounded shadow-[0_0_15px_rgba(34,197,94,0.6)] transition-all animate-bounce text-xs md:text-sm uppercase tracking-wide border border-green-400/50"
+                      className="mt-2 md:mt-3 w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold py-1.5 md:py-2 px-4 rounded shadow-[0_0_15px_rgba(34,197,94,0.6)] transition-all animate-bounce text-xs md:text-sm uppercase tracking-wide border border-emerald-400/50"
                     >
                       Collect Reward
                     </button>
                   )}
                 </>
               ) : (
-                <div className="text-xs md:text-sm text-gray-400 py-2 italic flex items-center gap-2">
-                  <svg className="animate-spin h-3 w-3 md:h-4 md:w-4 text-indigo-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <div className="text-xs md:text-sm text-stone-400 py-2 italic flex items-center gap-2">
+                  <svg className="animate-spin h-3 w-3 md:h-4 md:w-4 text-amber-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -354,7 +353,7 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                 </div>
               )
             ) : (
-              <div className="text-xs md:text-sm text-indigo-200/70 py-1">
+              <div className="text-xs md:text-sm text-stone-400 py-1">
                  <p className="mb-1">Free play active.</p>
               </div>
             )}
@@ -371,43 +370,40 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
           {hoveredTool && (() => {
             const config = BUILDINGS[hoveredTool];
             return (
-              <div className="absolute bottom-full left-0 mb-2 w-48 bg-gray-950/95 p-3 rounded-lg border border-gray-600 shadow-2xl backdrop-blur-md text-xs z-50 animate-fade-in pointer-events-none">
+              <div className="absolute bottom-full left-0 mb-2 w-48 bg-stone-950/95 p-3 rounded-lg border border-stone-600 shadow-2xl backdrop-blur-md text-xs z-50 animate-fade-in pointer-events-none">
                  <div className="font-bold text-white text-sm mb-1">{config.name}</div>
-                 <div className="text-gray-400 mb-3 italic leading-tight">{config.description}</div>
+                 <div className="text-stone-400 mb-3 italic leading-tight">{config.description}</div>
                  
                  <div className="space-y-1.5">
-                    {/* Add Health Stat for hover over existing? No, this is for toolbar. 
-                        However, we can add general info here.
-                    */}
-                    <div className="text-gray-500 text-[9px]">Click damaged buildings to repair (50% cost).</div>
+                    <div className="text-stone-500 text-[9px]">Click damaged buildings to repair (50% cost).</div>
 
                     {config.cost > 0 && (
-                        <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                            <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Cost</span>
+                        <div className="flex justify-between items-center border-b border-stone-800 pb-1">
+                            <span className="text-stone-500 uppercase text-[10px] font-bold tracking-wider">Cost</span>
                             <span className="text-red-400 font-mono font-bold text-sm">${config.cost}</span>
                         </div>
                     )}
                      {config.maintenanceCost > 0 && (
-                        <div className="flex justify-between items-center border-b border-gray-800 pb-1">
-                            <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Upkeep</span>
+                        <div className="flex justify-between items-center border-b border-stone-800 pb-1">
+                            <span className="text-stone-500 uppercase text-[10px] font-bold tracking-wider">Upkeep</span>
                             <span className="text-orange-400 font-mono font-bold text-sm">${config.maintenanceCost}/day</span>
                         </div>
                     )}
                     {config.incomeGen > 0 && (
                         <div className="flex justify-between items-center">
-                            <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Income</span>
+                            <span className="text-stone-500 uppercase text-[10px] font-bold tracking-wider">Income</span>
                             <span className="text-green-400 font-mono font-bold text-sm">+${config.incomeGen}/day</span>
                         </div>
                     )}
                     {config.popGen > 0 && (
                         <div className="flex justify-between items-center">
-                            <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Pop Growth</span>
+                            <span className="text-stone-500 uppercase text-[10px] font-bold tracking-wider">Pop Growth</span>
                             <span className="text-blue-400 font-mono font-bold text-sm">+{config.popGen}/day</span>
                         </div>
                     )}
                     {(config.powerGen > 0 || config.waterGen > 0 || config.educationGen > 0 || config.healthcareGen > 0 || config.goodsGen > 0 || config.safetyGen > 0) && (
-                         <div className="flex justify-between items-center border-t border-gray-800 pt-1">
-                            <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Output</span>
+                         <div className="flex justify-between items-center border-t border-stone-800 pt-1">
+                            <span className="text-stone-500 uppercase text-[10px] font-bold tracking-wider">Output</span>
                             <span className="text-yellow-400 font-mono font-bold text-sm">
                                 {config.powerGen > 0 ? `+${config.powerGen} ⚡ ` : ''}
                                 {config.waterGen > 0 ? `+${config.waterGen} 💧 ` : ''}
@@ -419,8 +415,8 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                         </div>
                     )}
                     {(config.powerUsage > 0 || config.waterUsage > 0 || config.goodsUsage > 0) && (
-                         <div className="flex justify-between items-center border-t border-gray-800 pt-1">
-                            <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Needs</span>
+                         <div className="flex justify-between items-center border-t border-stone-800 pt-1">
+                            <span className="text-stone-500 uppercase text-[10px] font-bold tracking-wider">Needs</span>
                             <span className="text-orange-400 font-mono font-bold text-sm">
                                 {config.powerUsage > 0 ? `-${config.powerUsage} ⚡ ` : ''}
                                 {config.waterUsage > 0 ? `-${config.waterUsage} 💧 ` : ''}
@@ -437,12 +433,12 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                  </div>
                  
                  {/* Arrow pointer */}
-                 <div className="absolute top-full left-6 -ml-1 border-8 border-transparent border-t-gray-950/95"></div>
+                 <div className="absolute top-full left-6 -ml-1 border-8 border-transparent border-t-stone-950/95"></div>
               </div>
             );
           })()}
 
-          <div className="flex gap-1 md:gap-2 bg-gray-900/80 p-1 md:p-2 rounded-2xl border border-gray-600/50 backdrop-blur-xl shadow-2xl w-full md:w-auto overflow-x-auto no-scrollbar justify-start md:justify-start">
+          <div className="flex gap-1 md:gap-2 bg-stone-900/80 p-1 md:p-2 rounded-2xl border border-stone-600/50 backdrop-blur-xl shadow-2xl w-full md:w-auto overflow-x-auto no-scrollbar justify-start md:justify-start">
             <div className="flex gap-1 md:gap-2 min-w-max px-1">
               {tools.map((type) => (
                 <ToolButton
@@ -456,28 +452,28 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                 />
               ))}
             </div>
-            <div className="text-[8px] text-gray-500 uppercase writing-mode-vertical flex items-center justify-center font-bold tracking-widest border-l border-gray-700 pl-1 ml-1 select-none">Build</div>
+            <div className="text-[8px] text-stone-500 uppercase writing-mode-vertical flex items-center justify-center font-bold tracking-widest border-l border-stone-700 pl-1 ml-1 select-none">Build</div>
           </div>
         </div>
 
-        {/* News Feed */}
-        <div className="w-full md:w-80 h-32 md:h-48 bg-black/80 text-white rounded-xl border border-gray-700/80 backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden relative">
-          <div className="bg-gray-800/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-300 border-b border-gray-600 flex justify-between items-center">
-            <span>City Feed</span>
-            <span className={`w-1.5 h-1.5 rounded-full ${aiEnabled ? 'bg-red-500 animate-pulse' : 'bg-gray-500'}`}></span>
+        {/* News Feed - Warm Dark Theme */}
+        <div className="w-full md:w-80 h-32 md:h-48 bg-black/80 text-white rounded-xl border border-stone-700/80 backdrop-blur-xl shadow-2xl flex flex-col overflow-hidden relative">
+          <div className="bg-stone-800/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-300 border-b border-stone-600 flex justify-between items-center">
+            <span>Kanairo Feed</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${aiEnabled ? 'bg-red-500 animate-pulse' : 'bg-stone-500'}`}></span>
           </div>
           
           {/* Scanline effect */}
           <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(to_bottom,rgba(255,255,255,0)_50%,rgba(0,0,0,0.1)_50%)] bg-[length:100%_4px] opacity-30 z-20"></div>
           
           <div ref={newsRef} className="flex-1 overflow-y-auto p-2 md:p-3 space-y-2 text-[10px] md:text-xs font-mono scroll-smooth mask-image-b z-10">
-            {newsFeed.length === 0 && <div className="text-gray-500 italic text-center mt-10">No active news stream.</div>}
+            {newsFeed.length === 0 && <div className="text-stone-500 italic text-center mt-10">No active news stream.</div>}
             {newsFeed.map((news) => (
               <div key={news.id} className={`
                 border-l-2 pl-2 py-1 transition-all animate-fade-in leading-tight relative
                 ${news.type === 'positive' ? 'border-green-500 text-green-200 bg-green-900/20' : ''}
                 ${news.type === 'negative' ? 'border-red-500 text-red-200 bg-red-900/20' : ''}
-                ${news.type === 'neutral' ? 'border-blue-400 text-blue-100 bg-blue-900/20' : ''}
+                ${news.type === 'neutral' ? 'border-amber-400 text-amber-100 bg-amber-900/20' : ''}
               `}>
                 <span className="opacity-70 text-[8px] absolute top-0.5 right-1">{new Date(Number(news.id.split('.')[0])).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                 {news.text}
@@ -488,21 +484,21 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
 
       </div>
       
-      {/* Credits */}
-      <div className="absolute bottom-1 right-2 md:right-4 text-[8px] md:text-[9px] text-white/30 font-mono text-right pointer-events-auto hover:text-white/60 transition-colors">
-        <a href="https://x.com/ammaar" target="_blank" rel="noreferrer">Created by @ammaar</a>
+      {/* Credits removed based on request, but footer area exists for layout balance */}
+      <div className="absolute bottom-1 right-2 md:right-4 text-[8px] md:text-[9px] text-white/10 font-mono text-right pointer-events-none">
+        v1.0.0
       </div>
 
       {/* Save Confirmation Modal */}
       {showSaveConfirmation && (
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center pointer-events-auto">
-          <div className="bg-gray-900 border border-gray-600 p-6 rounded-xl shadow-2xl max-w-sm w-full mx-4 transform transition-all scale-100 opacity-100">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center pointer-events-auto">
+          <div className="bg-stone-900 border border-stone-600 p-6 rounded-xl shadow-2xl max-w-sm w-full mx-4 transform transition-all scale-100 opacity-100">
             <h3 className="text-xl font-bold text-white mb-2">Save Game?</h3>
-            <p className="text-gray-400 mb-6 text-sm">Are you sure you want to save your current progress? This will overwrite your previous save slot.</p>
+            <p className="text-stone-400 mb-6 text-sm">Are you sure you want to save your current progress? This will overwrite your previous save slot.</p>
             <div className="flex justify-end gap-3">
               <button 
                 onClick={cancelSave}
-                className="px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors text-sm font-semibold"
+                className="px-4 py-2 rounded-lg text-stone-300 hover:bg-stone-800 hover:text-white transition-colors text-sm font-semibold"
               >
                 Cancel
               </button>
@@ -522,13 +518,13 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
 
       {/* Budget Modal */}
       {showBudgetModal && (
-        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center pointer-events-auto">
-           <div className="bg-slate-900 border border-slate-600 p-6 rounded-xl shadow-2xl max-w-md w-full mx-4 flex flex-col max-h-[90vh]">
-              <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
+        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center pointer-events-auto">
+           <div className="bg-stone-900 border border-stone-600 p-6 rounded-xl shadow-2xl max-w-md w-full mx-4 flex flex-col max-h-[90vh]">
+              <div className="flex justify-between items-center mb-4 border-b border-stone-700 pb-2">
                  <h3 className="text-xl font-bold text-white flex items-center gap-2">
                     <span>⚙️</span> City Budget
                  </h3>
-                 <button onClick={() => setShowBudgetModal(false)} className="text-gray-400 hover:text-white transition-colors">
+                 <button onClick={() => setShowBudgetModal(false)} className="text-stone-400 hover:text-white transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -536,23 +532,23 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
               </div>
               
               <div className="overflow-y-auto pr-2">
-                  <p className="text-gray-400 text-xs mb-4">
+                  <p className="text-stone-400 text-xs mb-4">
                      Adjusting funding affects service efficiency and monthly upkeep costs. Lower funding saves money but reduces service quality.
                   </p>
                   
-                  <BudgetSlider label="Power Grid" icon="⚡" value={stats.budget.power} onChange={(v) => onBudgetChange('power', v)} colorClass="text-yellow-400" />
-                  <BudgetSlider label="Water Works" icon="💧" value={stats.budget.water} onChange={(v) => onBudgetChange('water', v)} colorClass="text-blue-400" />
-                  <BudgetSlider label="Infrastructure (Roads)" icon="🛣️" value={stats.budget.infrastructure} onChange={(v) => onBudgetChange('infrastructure', v)} colorClass="text-gray-300" />
-                  <div className="h-px bg-slate-700 my-3"></div>
-                  <BudgetSlider label="Education" icon="🎓" value={stats.budget.education} onChange={(v) => onBudgetChange('education', v)} colorClass="text-amber-400" />
+                  <BudgetSlider label="Power Grid" icon="⚡" value={stats.budget.power} onChange={(v) => onBudgetChange('power', v)} colorClass="text-amber-400" />
+                  <BudgetSlider label="Water Works" icon="💧" value={stats.budget.water} onChange={(v) => onBudgetChange('water', v)} colorClass="text-cyan-400" />
+                  <BudgetSlider label="Infrastructure (Roads)" icon="🛣️" value={stats.budget.infrastructure} onChange={(v) => onBudgetChange('infrastructure', v)} colorClass="text-stone-300" />
+                  <div className="h-px bg-stone-700 my-3"></div>
+                  <BudgetSlider label="Education" icon="🎓" value={stats.budget.education} onChange={(v) => onBudgetChange('education', v)} colorClass="text-yellow-400" />
                   <BudgetSlider label="Healthcare" icon="🏥" value={stats.budget.healthcare} onChange={(v) => onBudgetChange('healthcare', v)} colorClass="text-red-300" />
                   <BudgetSlider label="Public Safety" icon="🛡️" value={stats.budget.safety} onChange={(v) => onBudgetChange('safety', v)} colorClass="text-blue-500" />
                   <BudgetSlider label="Parks & Environment" icon="🌳" value={stats.budget.environment} onChange={(v) => onBudgetChange('environment', v)} colorClass="text-green-400" />
 
               </div>
               
-              <div className="mt-4 pt-4 border-t border-slate-700 text-center">
-                  <button onClick={() => setShowBudgetModal(false)} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm transition-colors">
+              <div className="mt-4 pt-4 border-t border-stone-700 text-center">
+                  <button onClick={() => setShowBudgetModal(false)} className="px-6 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-bold text-sm transition-colors shadow-lg shadow-amber-900/20">
                       Apply Changes
                   </button>
               </div>

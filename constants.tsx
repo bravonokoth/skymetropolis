@@ -37,7 +37,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     maintenanceCost: 1, // Roads cost upkeep
     name: 'Road',
     description: 'Connects buildings.',
-    color: '#374151', // gray-700
+    color: '#1f2937', // Darker Asphalt
     popGen: 0,
     incomeGen: 0,
     powerUsage: 0,
@@ -54,9 +54,9 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     type: BuildingType.Residential,
     cost: 100,
     maintenanceCost: 0,
-    name: 'House',
+    name: 'Estate',
     description: '+5 Pop/day',
-    color: '#f87171', // red-400
+    color: '#ea580c', // Orange-600 (Terracotta roofs)
     popGen: 5,
     incomeGen: 0,
     powerUsage: 1,
@@ -73,9 +73,9 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     type: BuildingType.MixedUse,
     cost: 350,
     maintenanceCost: 0,
-    name: 'Mixed Use',
+    name: 'Flats & Shops',
     description: '+Pop & +$$',
-    color: '#8b5cf6', // violet-500
+    color: '#7c3aed', // Violet-600
     popGen: 8,
     incomeGen: 10,
     powerUsage: 2,
@@ -92,9 +92,9 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     type: BuildingType.Commercial,
     cost: 200,
     maintenanceCost: 0,
-    name: 'Shop',
+    name: 'Plaza',
     description: '+$15/day',
-    color: '#60a5fa', // blue-400
+    color: '#2563eb', // Blue-600
     popGen: 0,
     incomeGen: 15,
     powerUsage: 2,
@@ -111,9 +111,9 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     type: BuildingType.Industrial,
     cost: 400,
     maintenanceCost: 0,
-    name: 'Factory',
+    name: 'Plant',
     description: '+$40/day, Pollutes',
-    color: '#facc15', // yellow-400
+    color: '#ca8a04', // Yellow-600 (Darker industrial gold)
     popGen: 0,
     incomeGen: 40,
     powerUsage: 5,
@@ -130,9 +130,9 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     type: BuildingType.Park,
     cost: 50,
     maintenanceCost: 2, // Gardening upkeep
-    name: 'Park',
+    name: 'Uhuru Park',
     description: 'Happiness',
-    color: '#4ade80', // green-400
+    color: '#16a34a', // Green-600
     popGen: 1,
     incomeGen: 0,
     powerUsage: 0,
@@ -149,9 +149,9 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     type: BuildingType.PowerPlant,
     cost: 500,
     maintenanceCost: 20,
-    name: 'Power Plant',
+    name: 'Geothermal',
     description: '+50 Power',
-    color: '#ea580c', // orange-600
+    color: '#b91c1c', // Red-700
     popGen: 0,
     incomeGen: 0,
     powerUsage: 0,
@@ -168,9 +168,9 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     type: BuildingType.WaterPump,
     cost: 400,
     maintenanceCost: 15,
-    name: 'Water Pump',
+    name: 'Borehole',
     description: '+50 Water',
-    color: '#0ea5e9', // sky-500
+    color: '#0891b2', // Cyan-600
     popGen: 0,
     incomeGen: 0,
     powerUsage: 2, // Pumps need power!
@@ -187,9 +187,9 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     type: BuildingType.School,
     cost: 600,
     maintenanceCost: 25,
-    name: 'School',
+    name: 'Academy',
     description: 'Education Service',
-    color: '#fcd34d', // amber-300
+    color: '#d97706', // Amber-600
     popGen: 0,
     incomeGen: 0,
     powerUsage: 3,
@@ -208,7 +208,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     maintenanceCost: 40,
     name: 'Hospital',
     description: 'Healthcare Service',
-    color: '#fecaca', // red-200 (white/red mix)
+    color: '#f43f5e', // Rose-500
     popGen: 0,
     incomeGen: 0,
     powerUsage: 5,
@@ -225,9 +225,9 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     type: BuildingType.PoliceStation,
     cost: 700,
     maintenanceCost: 30,
-    name: 'Police Station',
+    name: 'Police Post',
     description: 'Safety & Security',
-    color: '#3b82f6', // blue-500
+    color: '#1e3a8a', // Blue-900
     popGen: 0,
     incomeGen: 0,
     powerUsage: 3,
@@ -246,7 +246,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     maintenanceCost: 100,
     name: 'Stadium',
     description: 'Major Entertainment',
-    color: '#10b981', // emerald-500
+    color: '#059669', // Emerald-600
     popGen: 0,
     incomeGen: 60,
     powerUsage: 15,
@@ -265,7 +265,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     maintenanceCost: 250,
     name: 'Airport',
     description: 'Global Trade Hub',
-    color: '#94a3b8', // slate-400
+    color: '#64748b', // Slate-500
     popGen: 0,
     incomeGen: 300,
     powerUsage: 30,

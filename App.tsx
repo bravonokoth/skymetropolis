@@ -175,7 +175,7 @@ function App() {
         
         SoundService.init();
         setGameStarted(true);
-        addNewsItem({ id: Date.now().toString(), text: `Game loaded. Welcome back, Mayor!`, type: 'positive' });
+        addNewsItem({ id: Date.now().toString(), text: `Karibu back to Kanairo!`, type: 'positive' });
       } catch (e) {
         console.error("Failed to load save:", e);
       }
@@ -187,7 +187,7 @@ function App() {
     if (!gameStarted) return;
 
     if (newsFeed.length === 0) {
-       addNewsItem({ id: Date.now().toString(), text: "Welcome to SkyMetropolis. Zoning approved.", type: 'positive' });
+       addNewsItem({ id: Date.now().toString(), text: "Welcome to KanairoCity. Let's build!", type: 'positive' });
     }
     // Note: Goal fetching is now handled by the dedicated monitoring effect below
   }, [gameStarted, newsFeed.length, addNewsItem]);
@@ -390,7 +390,7 @@ function App() {
                   setGrid(newGrid);
                   addNewsItem({
                       id: Date.now().toString(), 
-                      text: `DISASTER! ${disasterType} struck at ${center.x},${center.y}. ${hitCount} buildings damaged!`, 
+                      text: `ALERT! ${disasterType} struck at ${center.x},${center.y}. ${hitCount} buildings damaged!`, 
                       type: 'negative'
                   });
                   disasterOccurred = true;
@@ -476,9 +476,9 @@ function App() {
         let currentWeather = prev.weather;
         if (Math.random() < 0.05) {
             const rand = Math.random();
-            if (rand < 0.6) currentWeather = 'sunny';
-            else if (rand < 0.85) currentWeather = 'rainy';
-            else currentWeather = 'snowy';
+            if (rand < 0.7) currentWeather = 'sunny'; // Sunny Nairobi
+            else if (rand < 0.95) currentWeather = 'rainy';
+            else currentWeather = 'snowy'; // Very rare in Nairobi but keeping logic
         }
         
         const netIncome = dailyIncome - dailyMaintenance;
@@ -651,7 +651,7 @@ function App() {
   };
 
   return (
-    <div className="relative w-screen h-screen overflow-hidden selection:bg-transparent selection:text-transparent bg-sky-900">
+    <div className="relative w-screen h-screen overflow-hidden selection:bg-transparent selection:text-transparent bg-amber-900">
       {/* 3D Rendering Layer */}
       <IsoMap 
         grid={grid} 
@@ -707,7 +707,7 @@ function App() {
           height: 16px;
           width: 16px;
           border-radius: 50%;
-          background: #ffffff;
+          background: #fbbf24;
           margin-top: -6px;
           box-shadow: 0 1px 3px rgba(0,0,0,0.3);
           cursor: pointer;

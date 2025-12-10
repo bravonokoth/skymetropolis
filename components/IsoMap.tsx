@@ -80,13 +80,13 @@ const planeGeo = new THREE.PlaneGeometry(1, 1);
 // --- 1. Advanced Procedural Buildings ---
 
 // FIX: Wrap component in React.memo to ensure TypeScript recognizes it as a component that accepts a 'key' prop.
-const WindowBlock = React.memo(({ position, scale, color = "#bfdbfe" }: { position: [number, number, number], scale: [number, number, number], color?: string }) => (
+const WindowBlock = React.memo(({ position, scale, color = "#fed7aa" }: { position: [number, number, number], scale: [number, number, number], color?: string }) => (
   <mesh geometry={boxGeo} position={position} scale={scale}>
     <meshStandardMaterial color={color} emissive={color} emissiveIntensity={0.2} roughness={0.1} metalness={0.8} />
   </mesh>
 ));
 
-const SmokeStack = ({ position, color = "#d1d5db" }: { position: [number, number, number], color?: string }) => {
+const SmokeStack = ({ position, color = "#a8a29e" }: { position: [number, number, number], color?: string }) => {
   const ref = useRef<THREE.Group>(null);
   useFrame((state) => {
     if (ref.current) {
@@ -116,7 +116,7 @@ const SmokeStack = ({ position, color = "#d1d5db" }: { position: [number, number
       <group ref={ref} position={[0, 1, 0]}>
          {[0,1,2].map(i => (
             <mesh key={i} geometry={sphereGeo} position={[0, i*0.4, 0]} scale={[0.2,0.2,0.2]}>
-                <meshStandardMaterial color="white" transparent opacity={0.6} />
+                <meshStandardMaterial color="#f5f5f4" transparent opacity={0.6} />
             </mesh>
          ))}
       </group>
@@ -214,7 +214,7 @@ const ConstructionScaffold = () => {
 
       {/* Wireframe Box indicating construction zone */}
       <mesh position={[0, 0.6, 0]} scale={[1.1, 1.2, 1.1]} geometry={boxGeo}>
-        <meshBasicMaterial color="#facc15" wireframe transparent opacity={0.3} />
+        <meshBasicMaterial color="#f59e0b" wireframe transparent opacity={0.3} />
       </mesh>
       
       {/* Corner Posts */}
@@ -303,47 +303,47 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health 
     switch (type) {
       case BuildingType.Residential:
         if (isSlum) {
-             // Slum: Small, crowded shacks, muted colors
+             // Slum: Corrugated Iron Sheets / Informal Settlement look
              return (
                 <group>
                   <mesh geometry={boxGeo} castShadow receiveShadow position={[0.2, 0.3, 0.2]} scale={[0.4, 0.6, 0.4]}>
-                    <meshStandardMaterial color={matColor("#8f7868")} roughness={0.9} />
+                    <meshStandardMaterial color={matColor("#a8a29e")} roughness={0.8} />
                   </mesh>
                   <mesh geometry={boxGeo} castShadow receiveShadow position={[-0.2, 0.2, -0.2]} scale={[0.4, 0.4, 0.4]}>
-                    <meshStandardMaterial color={matColor("#756458")} roughness={0.9} />
+                    <meshStandardMaterial color={matColor("#d6d3d1")} roughness={0.8} />
                   </mesh>
-                  {/* Corrugated Roofs */}
+                  {/* Rusted Roofs */}
                   <mesh geometry={coneGeo} position={[0.2, 0.65, 0.2]} scale={[0.35, 0.15, 0.35]} rotation={[0, Math.PI/4, 0]}>
-                      <meshStandardMaterial color={matColor("#5c4d44")} />
+                      <meshStandardMaterial color={matColor("#92400e")} />
                   </mesh>
                 </group>
              );
         } else if (isLuxury) {
-             // Luxury: Modern, glass, taller, pool?
+             // Luxury: Modern Villas
              return (
                 <group>
                   <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.6, 0]} scale={[0.7, 1.2, 0.7]}>
-                     <meshStandardMaterial color={matColor("#f0fdfa")} metalness={0.2} roughness={0.1} />
+                     <meshStandardMaterial color={matColor("#fff7ed")} metalness={0.1} roughness={0.2} />
                   </mesh>
                    {/* Glass Balconies */}
-                   <WindowBlock position={[0, 0.5, 0.36]} scale={[0.6, 0.2, 0.05]} color="#22d3ee" />
-                   <WindowBlock position={[0, 0.9, 0.36]} scale={[0.6, 0.2, 0.05]} color="#22d3ee" />
+                   <WindowBlock position={[0, 0.5, 0.36]} scale={[0.6, 0.2, 0.05]} color="#38bdf8" />
+                   <WindowBlock position={[0, 0.9, 0.36]} scale={[0.6, 0.2, 0.05]} color="#38bdf8" />
                    {/* Penthouse Roof */}
                    <mesh geometry={boxGeo} position={[0, 1.25, 0]} scale={[0.5, 0.1, 0.5]}>
-                       <meshStandardMaterial color={matColor("#334155")} />
+                       <meshStandardMaterial color={matColor("#7c2d12")} />
                    </mesh>
                 </group>
              )
         } else {
-             // Standard Suburban Houses
+             // Standard Housing - Warm Terracotta tones
              const styles = [
                 // Style 1: L-shape
                 <group key="1">
                     <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.3, 0]} scale={[0.8, 0.6, 0.6]}>
-                      <meshStandardMaterial color={matColor("#fca5a5")} />
+                      <meshStandardMaterial color={matColor("#fed7aa")} />
                     </mesh>
                     <mesh geometry={coneGeo} position={[0, 0.8, 0]} scale={[0.6, 0.4, 0.6]} rotation={[0, Math.PI/4, 0]}>
-                       <meshStandardMaterial color={matColor("#7f1d1d")} />
+                       <meshStandardMaterial color={matColor("#ea580c")} />
                     </mesh>
                     <WindowBlock position={[0.2, 0.3, 0.31]} scale={[0.2, 0.2, 0.05]} />
                     <WindowBlock position={[-0.2, 0.3, 0.31]} scale={[0.2, 0.2, 0.05]} />
@@ -351,10 +351,10 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health 
                 // Style 2: Two story box
                 <group key="2">
                    <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.5, 0]} scale={[0.6, 1, 0.6]}>
-                      <meshStandardMaterial color={matColor("#fdba74")} />
+                      <meshStandardMaterial color={matColor("#ffedd5")} />
                     </mesh>
                     <mesh geometry={coneGeo} position={[0, 1.1, 0]} scale={[0.5, 0.3, 0.5]}>
-                        <meshStandardMaterial color={matColor("#9a3412")} />
+                        <meshStandardMaterial color={matColor("#c2410c")} />
                     </mesh>
                     <WindowBlock position={[0, 0.3, 0.31]} scale={[0.2, 0.2, 0.05]} />
                     <WindowBlock position={[0, 0.7, 0.31]} scale={[0.2, 0.2, 0.05]} />
@@ -364,19 +364,19 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health 
         }
 
       case BuildingType.MixedUse:
-          // Apartment with shop below
+          // Apartment with shop below - Purple/Gold accents
           return (
             <group>
                 {/* Commercial Base */}
                 <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.3, 0]} scale={[0.9, 0.6, 0.9]}>
-                    <meshStandardMaterial color={matColor("#a78bfa")} />
+                    <meshStandardMaterial color={matColor("#7c3aed")} />
                 </mesh>
                 {/* Shop Window */}
-                <WindowBlock position={[0, 0.2, 0.46]} scale={[0.8, 0.3, 0.05]} color="#fdf4ff" />
+                <WindowBlock position={[0, 0.2, 0.46]} scale={[0.8, 0.3, 0.05]} color="#fef08a" />
                 
                 {/* Residential Top */}
                 <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.9, 0]} scale={[0.7, 0.6, 0.7]}>
-                    <meshStandardMaterial color={matColor("#ddd6fe")} />
+                    <meshStandardMaterial color={matColor("#ede9fe")} />
                 </mesh>
                 {/* Windows */}
                 <WindowBlock position={[0.2, 0.9, 0.36]} scale={[0.15, 0.2, 0.05]} />
@@ -385,18 +385,18 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health 
                 
                 {/* Roof details */}
                 <mesh geometry={boxGeo} position={[0, 1.25, 0]} scale={[0.6, 0.1, 0.6]}>
-                     <meshStandardMaterial color={matColor("#5b21b6")} />
+                     <meshStandardMaterial color={matColor("#4c1d95")} />
                 </mesh>
             </group>
           );
 
       case BuildingType.Commercial:
         if (hash > 0.5) {
-            // Modern Office Block
+            // Modern Office Block - Blue Glass
              return (
                 <group>
                   <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.75, 0]} scale={[0.8, 1.5, 0.8]}>
-                    <meshStandardMaterial color={matColor("#93c5fd")} metalness={0.4} roughness={0.2} />
+                    <meshStandardMaterial color={matColor("#60a5fa")} metalness={0.6} roughness={0.2} />
                   </mesh>
                   {/* Vertical Strips */}
                   <mesh geometry={boxGeo} position={[0.41, 0.75, 0.2]} scale={[0.05, 1.5, 0.1]}>
@@ -412,43 +412,43 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health 
                 </group>
               );
         } else {
-             // Department Store / Low Rise
+             // Shopping Mall / Plaza
              return (
                 <group>
                   <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.4, 0]} scale={[0.9, 0.8, 0.9]}>
-                    <meshStandardMaterial color={matColor("#60a5fa")} />
+                    <meshStandardMaterial color={matColor("#3b82f6")} />
                   </mesh>
                   {/* Large Sign Board */}
                   <mesh geometry={boxGeo} position={[0, 0.9, 0.46]} scale={[0.7, 0.2, 0.05]}>
                       <meshStandardMaterial color={matColor("#1d4ed8")} />
                   </mesh>
                   {/* Glass Front */}
-                  <WindowBlock position={[0, 0.3, 0.46]} scale={[0.8, 0.4, 0.05]} color="#dbeafe" />
+                  <WindowBlock position={[0, 0.3, 0.46]} scale={[0.8, 0.4, 0.05]} color="#bfdbfe" />
                 </group>
              );
         }
 
       case BuildingType.Industrial:
          if (hash > 0.6) {
-             // Refinery
+             // Refinery - Dusty Gold
              return (
                 <group>
                     <mesh geometry={boxGeo} castShadow receiveShadow position={[-0.2, 0.4, -0.2]} scale={[0.5, 0.8, 0.5]}>
-                         <meshStandardMaterial color={matColor("#eab308")} />
+                         <meshStandardMaterial color={matColor("#ca8a04")} />
                     </mesh>
                     {/* Pipes */}
                      <mesh geometry={torusGeo} position={[-0.2, 0.4, 0.1]} scale={[0.3,0.3,0.3]} rotation={[0,Math.PI/2,0]}>
-                         <meshStandardMaterial color={matColor("#a16207")} />
+                         <meshStandardMaterial color={matColor("#713f12")} />
                     </mesh>
-                    <SmokeStack position={[0.3, 0, 0.3]} color="#713f12" />
+                    <SmokeStack position={[0.3, 0, 0.3]} color="#57534e" />
                 </group>
              )
          } else {
-            // Warehouse / Factory Hall
+            // Warehouse - Earthy
             return (
               <group>
                 <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.35, 0]} scale={[0.9, 0.7, 0.9]}>
-                  <meshStandardMaterial color={matColor("#facc15")} />
+                  <meshStandardMaterial color={matColor("#eab308")} />
                 </mesh>
                 {/* Sawtooth Roof */}
                 <group position={[0, 0.7, 0]}>
@@ -467,17 +467,17 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health 
       case BuildingType.PowerPlant:
         return (
           <group>
-            {/* Main reactor building */}
+            {/* Main reactor building - Red Brick */}
             <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.4, 0]} scale={[0.8, 0.8, 0.8]}>
-              <meshStandardMaterial color={matColor("#c2410c")} />
+              <meshStandardMaterial color={matColor("#991b1b")} />
             </mesh>
             {/* Cooling Tower 1 */}
-            <SmokeStack position={[-0.3, 0, -0.3]} color="#9a3412" />
+            <SmokeStack position={[-0.3, 0, -0.3]} color="#7f1d1d" />
             {/* Cooling Tower 2 */}
-            <SmokeStack position={[0.3, 0, 0.3]} color="#9a3412" />
+            <SmokeStack position={[0.3, 0, 0.3]} color="#7f1d1d" />
              {/* Hazard Stripes */}
             <mesh geometry={boxGeo} position={[0, 0.81, 0]} scale={[0.6, 0.05, 0.6]}>
-                <meshStandardMaterial color={matColor("#fbbf24")} />
+                <meshStandardMaterial color={matColor("#facc15")} />
             </mesh>
           </group>
         );
@@ -487,15 +487,15 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health 
            <group>
              {/* Pump House */}
              <mesh geometry={boxGeo} castShadow receiveShadow position={[-0.2, 0.3, 0]} scale={[0.4, 0.6, 0.6]}>
-               <meshStandardMaterial color={matColor("#0284c7")} />
+               <meshStandardMaterial color={matColor("#0891b2")} />
              </mesh>
              {/* Water Tank */}
              <mesh geometry={cylinderGeo} castShadow receiveShadow position={[0.3, 0.4, 0]} scale={[0.35, 0.8, 0.35]}>
-                <meshStandardMaterial color={matColor("#bae6fd")} metalness={0.3} roughness={0.2} opacity={0.9} transparent />
+                <meshStandardMaterial color={matColor("#67e8f9")} metalness={0.3} roughness={0.2} opacity={0.9} transparent />
              </mesh>
              {/* Pipe */}
              <mesh geometry={cylinderGeo} position={[0.05, 0.2, 0]} rotation={[0, 0, Math.PI/2]} scale={[0.05, 0.4, 0.05]}>
-                <meshStandardMaterial color={matColor("#075985")} />
+                <meshStandardMaterial color={matColor("#0e7490")} />
              </mesh>
            </group>
         );
@@ -503,9 +503,9 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health 
       case BuildingType.School:
           return (
              <group>
-                {/* Main Building Brick */}
+                {/* Main Building - Bright Amber */}
                 <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.4, 0]} scale={[0.9, 0.8, 0.6]}>
-                    <meshStandardMaterial color={matColor("#d97706")} roughness={0.9} /> {/* Amber-600 */}
+                    <meshStandardMaterial color={matColor("#f59e0b")} roughness={0.9} />
                 </mesh>
                 {/* Entrance */}
                 <mesh geometry={boxGeo} position={[0, 0.3, 0.35]} scale={[0.3, 0.4, 0.2]}>
@@ -525,28 +525,28 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health 
       case BuildingType.Hospital:
           return (
              <group>
-                {/* Main Wings */}
+                {/* Main Wings - White/Red */}
                 <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.5, 0]} scale={[0.9, 1, 0.4]}>
-                    <meshStandardMaterial color={matColor("#f8fafc")} /> {/* Slate-50 */}
+                    <meshStandardMaterial color={matColor("#fecdd3")} /> 
                 </mesh>
                 <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.5, 0]} scale={[0.3, 1, 0.9]}>
-                    <meshStandardMaterial color={matColor("#f8fafc")} />
+                    <meshStandardMaterial color={matColor("#fecdd3")} />
                 </mesh>
                 {/* Red Cross */}
                 <group position={[0, 0.8, 0.46]} scale={[0.15, 0.15, 1]}>
                     <mesh geometry={boxGeo} scale={[1, 0.3, 0.05]}>
-                        <meshBasicMaterial color="#ef4444" />
+                        <meshBasicMaterial color="#e11d48" />
                     </mesh>
                      <mesh geometry={boxGeo} scale={[0.3, 1, 0.05]}>
-                        <meshBasicMaterial color="#ef4444" />
+                        <meshBasicMaterial color="#e11d48" />
                     </mesh>
                 </group>
                 {/* Helipad on roof */}
                  <mesh geometry={circleGeo} position={[0, 1.01, 0]} rotation={[-Math.PI/2, 0, 0]} scale={[0.2, 0.2, 1]}>
-                     <meshBasicMaterial color={matColor("#cbd5e1")} />
+                     <meshBasicMaterial color={matColor("#94a3b8")} />
                  </mesh>
                  <mesh geometry={boxGeo} position={[0, 1.02, 0]} scale={[0.15, 0.02, 0.15]}>
-                     <meshBasicMaterial color="#ef4444" />
+                     <meshBasicMaterial color="#e11d48" />
                  </mesh>
              </group>
           );
@@ -556,15 +556,15 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health 
             <group>
                {/* Base Building */}
                <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.4, 0]} scale={[0.8, 0.8, 0.8]}>
-                   <meshStandardMaterial color={matColor("#eff6ff")} /> {/* Blue-50 */}
+                   <meshStandardMaterial color={matColor("#dbeafe")} />
                </mesh>
                {/* Blue Band */}
                <mesh geometry={boxGeo} position={[0, 0.4, 0]} scale={[0.81, 0.2, 0.81]}>
-                   <meshStandardMaterial color={matColor("#2563eb")} /> {/* Blue-600 */}
+                   <meshStandardMaterial color={matColor("#1e40af")} /> 
                </mesh>
                {/* Roof Structure */}
                <mesh geometry={boxGeo} position={[0, 0.85, 0]} scale={[0.6, 0.1, 0.6]}>
-                   <meshStandardMaterial color={matColor("#1e3a8a")} /> {/* Blue-900 */}
+                   <meshStandardMaterial color={matColor("#172554")} /> 
                </mesh>
                {/* Siren */}
                <SirenLight position={[0, 0.95, 0]} />
@@ -575,28 +575,28 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health 
         return (
           <group>
             <mesh geometry={boxGeo} receiveShadow position={[0, 0.05, 0]} scale={[0.95, 0.1, 0.95]}>
-               <meshStandardMaterial color={matColor("#86efac")} />
+               <meshStandardMaterial color={matColor("#22c55e")} />
             </mesh>
-             {/* Trees */}
+             {/* Trees - Acacia Style (flattened tops) */}
             <group position={[-0.25, 0, -0.25]}>
-                <mesh geometry={cylinderGeo} position={[0, 0.3, 0]} scale={[0.1, 0.4, 0.1]}>
+                <mesh geometry={cylinderGeo} position={[0, 0.3, 0]} scale={[0.1, 0.5, 0.1]}>
                     <meshStandardMaterial color={matColor("#78350f")} />
                 </mesh>
-                <mesh geometry={coneGeo} position={[0, 0.6, 0]} scale={[0.3, 0.5, 0.3]}>
-                    <meshStandardMaterial color={matColor("#166534")} />
+                <mesh geometry={cylinderGeo} position={[0, 0.6, 0]} scale={[0.5, 0.1, 0.5]}>
+                    <meshStandardMaterial color={matColor("#15803d")} />
                 </mesh>
             </group>
             <group position={[0.25, 0, 0.25]}>
-                <mesh geometry={cylinderGeo} position={[0, 0.2, 0]} scale={[0.08, 0.3, 0.08]}>
+                <mesh geometry={cylinderGeo} position={[0, 0.25, 0]} scale={[0.08, 0.4, 0.08]}>
                     <meshStandardMaterial color={matColor("#78350f")} />
                 </mesh>
-                <mesh geometry={coneGeo} position={[0, 0.5, 0]} scale={[0.25, 0.4, 0.25]}>
-                    <meshStandardMaterial color={matColor("#15803d")} />
+                <mesh geometry={cylinderGeo} position={[0, 0.5, 0]} scale={[0.4, 0.1, 0.4]}>
+                    <meshStandardMaterial color={matColor("#166534")} />
                 </mesh>
             </group>
              {/* Fountain Water */}
              <mesh geometry={cylinderGeo} position={[0, 0.15, 0]} scale={[0.3, 0.1, 0.3]}>
-                 <meshStandardMaterial color={matColor("#bae6fd")} />
+                 <meshStandardMaterial color={matColor("#67e8f9")} />
              </mesh>
           </group>
         );
@@ -606,19 +606,19 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health 
           <group>
              {/* Base */}
              <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.1, 0]} scale={[0.9, 0.2, 0.9]}>
-                 <meshStandardMaterial color={matColor("#94a3b8")} />
+                 <meshStandardMaterial color={matColor("#065f46")} />
              </mesh>
-             {/* Stands Ring (simulated with torus) */}
+             {/* Stands Ring */}
              <mesh geometry={torusGeo} position={[0, 0.3, 0]} scale={[0.8, 0.8, 1]} rotation={[Math.PI/2, 0, 0]}>
-                 <meshStandardMaterial color={matColor("#cbd5e1")} />
+                 <meshStandardMaterial color={matColor("#fcd34d")} /> {/* Gold stands */}
              </mesh>
              {/* Outer Wall */}
              <mesh geometry={cylinderGeo} castShadow position={[0, 0.25, 0]} scale={[0.42, 0.3, 0.42]}>
-                 <meshStandardMaterial color={matColor("#64748b")} />
+                 <meshStandardMaterial color={matColor("#047857")} />
              </mesh>
              {/* Field */}
              <mesh geometry={planeGeo} position={[0, 0.21, 0]} rotation={[-Math.PI/2, 0, 0]} scale={[0.5, 0.5, 1]}>
-                 <meshStandardMaterial color={matColor("#22c55e")} />
+                 <meshStandardMaterial color={matColor("#4ade80")} />
              </mesh>
              {/* Lights */}
              <mesh geometry={boxGeo} position={[0.35, 0.6, 0.35]} scale={[0.05, 0.4, 0.05]}>
@@ -641,15 +641,15 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health 
           <group>
              {/* Runway Strip */}
              <mesh geometry={boxGeo} receiveShadow position={[0, 0.05, 0]} scale={[0.95, 0.1, 0.95]}>
-                 <meshStandardMaterial color={matColor("#334155")} />
+                 <meshStandardMaterial color={matColor("#475569")} />
              </mesh>
              {/* Markings */}
              <mesh geometry={boxGeo} position={[0, 0.11, 0]} scale={[0.1, 0.02, 0.6]}>
-                 <meshBasicMaterial color="#ffffff" opacity={0.5} transparent />
+                 <meshBasicMaterial color="#fbbf24" opacity={0.8} transparent />
              </mesh>
              {/* Control Tower */}
              <mesh geometry={cylinderGeo} castShadow position={[-0.3, 0.4, -0.3]} scale={[0.1, 0.8, 0.1]}>
-                 <meshStandardMaterial color={matColor("#e2e8f0")} />
+                 <meshStandardMaterial color={matColor("#cbd5e1")} />
              </mesh>
              <mesh geometry={boxGeo} castShadow position={[-0.3, 0.8, -0.3]} scale={[0.2, 0.15, 0.2]}>
                  <meshStandardMaterial color={matColor("#64748b")} />
@@ -712,17 +712,17 @@ const GroundRoadSegment = ({ x, y, grid, overrideVertical = false, overrideHoriz
 
     return (
         <group position={[0, 0.01, 0]}>
-             {/* Asphalt Base */}
+             {/* Asphalt Base - Darker for contrast with Red Soil */}
              <mesh rotation={[-Math.PI/2, 0, 0]} scale={[0.98, 0.98, 1]}>
                  <planeGeometry />
-                 <meshStandardMaterial color="#374151" roughness={0.9} />
+                 <meshStandardMaterial color="#1f2937" roughness={0.9} />
              </mesh>
 
              {/* Yellow Lines */}
              {!isIntersection && (
                 <>
-                   {(connectN || connectS) && <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, 0]} scale={[0.05, 1, 1]}><planeGeometry /><meshBasicMaterial color="#fbbf24" /></mesh>}
-                   {(connectE || connectW) && <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, 0]} scale={[1, 0.05, 1]}><planeGeometry /><meshBasicMaterial color="#fbbf24" /></mesh>}
+                   {(connectN || connectS) && <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, 0]} scale={[0.05, 1, 1]}><planeGeometry /><meshBasicMaterial color="#facc15" /></mesh>}
+                   {(connectE || connectW) && <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, 0]} scale={[1, 0.05, 1]}><planeGeometry /><meshBasicMaterial color="#facc15" /></mesh>}
                 </>
              )}
 
@@ -733,7 +733,7 @@ const GroundRoadSegment = ({ x, y, grid, overrideVertical = false, overrideHoriz
                     {connectS && <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, 0.35]} scale={[0.8, 0.1, 1]}><planeGeometry /><meshBasicMaterial color="white" /></mesh>}
                     {connectE && <mesh rotation={[-Math.PI/2, 0, 0]} position={[0.35, 0.005, 0]} scale={[0.1, 0.8, 1]}><planeGeometry /><meshBasicMaterial color="white" /></mesh>}
                     {connectW && <mesh rotation={[-Math.PI/2, 0, 0]} position={[-0.35, 0.005, 0]} scale={[0.1, 0.8, 1]}><planeGeometry /><meshBasicMaterial color="white" /></mesh>}
-                    <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.002, 0]} scale={[0.4, 0.4, 1]}><planeGeometry /><meshBasicMaterial color="#1f2937" transparent opacity={0.5} /></mesh>
+                    <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.002, 0]} scale={[0.4, 0.4, 1]}><planeGeometry /><meshBasicMaterial color="#111827" transparent opacity={0.5} /></mesh>
                  </>
              )}
         </group>
@@ -758,12 +758,12 @@ const BridgeRoadSegment = ({ x, y, grid, isOverpass }: { x: number, y: number, g
              {/* Central Deck */}
              <mesh position={[0, ELEVATION_HEIGHT, 0]} scale={[1, 0.1, 1]} castShadow receiveShadow>
                 <boxGeometry />
-                <meshStandardMaterial color="#94a3b8" /> {/* Concrete Side */}
+                <meshStandardMaterial color="#57534e" /> {/* Concrete Side */}
              </mesh>
              {/* Asphalt Top */}
              <mesh position={[0, ELEVATION_HEIGHT + 0.051, 0]} rotation={[-Math.PI/2, 0, 0]} scale={[0.9, 0.9, 1]}>
                  <planeGeometry />
-                 <meshStandardMaterial color="#334155" roughness={0.8} />
+                 <meshStandardMaterial color="#1f2937" roughness={0.8} />
              </mesh>
 
              {/* Connections */}
@@ -772,7 +772,7 @@ const BridgeRoadSegment = ({ x, y, grid, isOverpass }: { x: number, y: number, g
                  <group position={[0, ELEVATION_HEIGHT/2, -0.75]} rotation={[0.4, 0, 0]}>
                      <mesh position={[0, 0, 0]} scale={[1, 0.1, 0.8]}>
                         <boxGeometry />
-                        <meshStandardMaterial color="#334155" />
+                        <meshStandardMaterial color="#1f2937" />
                      </mesh>
                  </group>
              )}
@@ -781,7 +781,7 @@ const BridgeRoadSegment = ({ x, y, grid, isOverpass }: { x: number, y: number, g
                  <group position={[0, ELEVATION_HEIGHT/2, 0.75]} rotation={[-0.4, 0, 0]}>
                      <mesh position={[0, 0, 0]} scale={[1, 0.1, 0.8]}>
                         <boxGeometry />
-                        <meshStandardMaterial color="#334155" />
+                        <meshStandardMaterial color="#1f2937" />
                      </mesh>
                  </group>
              )}
@@ -790,7 +790,7 @@ const BridgeRoadSegment = ({ x, y, grid, isOverpass }: { x: number, y: number, g
                  <group position={[0.75, ELEVATION_HEIGHT/2, 0]} rotation={[0, 0, -0.4]}>
                      <mesh position={[0, 0, 0]} scale={[0.8, 0.1, 1]}>
                         <boxGeometry />
-                        <meshStandardMaterial color="#334155" />
+                        <meshStandardMaterial color="#1f2937" />
                      </mesh>
                  </group>
              )}
@@ -799,35 +799,35 @@ const BridgeRoadSegment = ({ x, y, grid, isOverpass }: { x: number, y: number, g
                  <group position={[-0.75, ELEVATION_HEIGHT/2, 0]} rotation={[0, 0, 0.4]}>
                      <mesh position={[0, 0, 0]} scale={[0.8, 0.1, 1]}>
                         <boxGeometry />
-                        <meshStandardMaterial color="#334155" />
+                        <meshStandardMaterial color="#1f2937" />
                      </mesh>
                  </group>
              )}
 
              {/* Railings */}
-             {!n && !rampN && <mesh position={[0, ELEVATION_HEIGHT + 0.15, -0.45]} scale={[1, 0.2, 0.1]}><boxGeometry /><meshStandardMaterial color="#cbd5e1" /></mesh>}
-             {!s && !rampS && <mesh position={[0, ELEVATION_HEIGHT + 0.15, 0.45]} scale={[1, 0.2, 0.1]}><boxGeometry /><meshStandardMaterial color="#cbd5e1" /></mesh>}
-             {!e && !rampE && <mesh position={[0.45, ELEVATION_HEIGHT + 0.15, 0]} scale={[0.1, 0.2, 1]}><boxGeometry /><meshStandardMaterial color="#cbd5e1" /></mesh>}
-             {!w && !rampW && <mesh position={[-0.45, ELEVATION_HEIGHT + 0.15, 0]} scale={[0.1, 0.2, 1]}><boxGeometry /><meshStandardMaterial color="#cbd5e1" /></mesh>}
+             {!n && !rampN && <mesh position={[0, ELEVATION_HEIGHT + 0.15, -0.45]} scale={[1, 0.2, 0.1]}><boxGeometry /><meshStandardMaterial color="#a8a29e" /></mesh>}
+             {!s && !rampS && <mesh position={[0, ELEVATION_HEIGHT + 0.15, 0.45]} scale={[1, 0.2, 0.1]}><boxGeometry /><meshStandardMaterial color="#a8a29e" /></mesh>}
+             {!e && !rampE && <mesh position={[0.45, ELEVATION_HEIGHT + 0.15, 0]} scale={[0.1, 0.2, 1]}><boxGeometry /><meshStandardMaterial color="#a8a29e" /></mesh>}
+             {!w && !rampW && <mesh position={[-0.45, ELEVATION_HEIGHT + 0.15, 0]} scale={[0.1, 0.2, 1]}><boxGeometry /><meshStandardMaterial color="#a8a29e" /></mesh>}
 
              {/* Pillars */}
              {!isOverpass && (
                  <>
                     <mesh position={[0.4, ELEVATION_HEIGHT/2, 0.4]} scale={[0.1, ELEVATION_HEIGHT, 0.1]} castShadow>
                         <cylinderGeometry />
-                        <meshStandardMaterial color="#64748b" />
+                        <meshStandardMaterial color="#44403c" />
                     </mesh>
                     <mesh position={[-0.4, ELEVATION_HEIGHT/2, 0.4]} scale={[0.1, ELEVATION_HEIGHT, 0.1]} castShadow>
                         <cylinderGeometry />
-                        <meshStandardMaterial color="#64748b" />
+                        <meshStandardMaterial color="#44403c" />
                     </mesh>
                     <mesh position={[0.4, ELEVATION_HEIGHT/2, -0.4]} scale={[0.1, ELEVATION_HEIGHT, 0.1]} castShadow>
                         <cylinderGeometry />
-                        <meshStandardMaterial color="#64748b" />
+                        <meshStandardMaterial color="#44403c" />
                     </mesh>
                     <mesh position={[-0.4, ELEVATION_HEIGHT/2, -0.4]} scale={[0.1, ELEVATION_HEIGHT, 0.1]} castShadow>
                         <cylinderGeometry />
-                        <meshStandardMaterial color="#64748b" />
+                        <meshStandardMaterial color="#44403c" />
                     </mesh>
                  </>
              )}
@@ -836,7 +836,7 @@ const BridgeRoadSegment = ({ x, y, grid, isOverpass }: { x: number, y: number, g
              {!isOverpass && !rampN && !rampS && !rampE && !rampW && (
                   <mesh position={[0, ELEVATION_HEIGHT/2, 0]} scale={[0.3, ELEVATION_HEIGHT, 0.3]} castShadow>
                         <cylinderGeometry />
-                        <meshStandardMaterial color="#64748b" />
+                        <meshStandardMaterial color="#44403c" />
                   </mesh>
              )}
 
@@ -923,8 +923,8 @@ const TrafficSystem = ({ grid, congestion }: { grid: Grid, congestion: number })
     const instanceRef = useRef<THREE.InstancedMesh>(null);
     const dummy = useMemo(() => new THREE.Object3D(), []);
 
-    // Color palette for cars
-    const carColors = useMemo(() => ["#ef4444", "#3b82f6", "#eab308", "#ffffff", "#000000", "#10b981"], []);
+    // Color palette for cars - Vibrant "Matatu" colors
+    const carColors = useMemo(() => ["#facc15", "#16a34a", "#dc2626", "#2563eb", "#ffffff", "#000000", "#7c3aed"], []);
 
     // Initialize/Update Cars based on Congestion
     useEffect(() => {
@@ -962,10 +962,10 @@ const TrafficSystem = ({ grid, congestion }: { grid: Grid, congestion: number })
                      vType = 'police';
                      color = '#ffffff'; 
                      speed = 0.08; // Fast
-                 } else if (typeRoll > 0.85) {
-                     vType = 'bus';
+                 } else if (typeRoll > 0.80) { // More buses for Kanairo!
+                     vType = 'bus'; // Matatus
                      color = Math.random() > 0.5 ? '#f59e0b' : '#3b82f6'; // Amber or Blue
-                     speed = 0.02; // Slow
+                     speed = 0.025; // Matatus are aggressive!
                  } else if (typeRoll > 0.70) {
                      vType = 'truck';
                      color = '#78716c'; // Grey/Brown
@@ -1168,7 +1168,6 @@ const TrafficSystem = ({ grid, congestion }: { grid: Grid, congestion: number })
 
 const WeatherSystem = ({ weather }: { weather: WeatherType }) => {
     const rainCount = 1000;
-    const snowCount = 1000;
     
     // Rain Geometry
     const rainRef = useRef<THREE.InstancedMesh>(null);
@@ -1218,23 +1217,25 @@ const WeatherSystem = ({ weather }: { weather: WeatherType }) => {
 };
 
 const EnvironmentEffects = ({ weather }: { weather: WeatherType }) => {
+    // Warm, sunny environment settings for Kanairo
     return (
         <>
-            <ambientLight intensity={weather === 'rainy' ? 0.3 : weather === 'snowy' ? 0.8 : 0.6} />
+            <ambientLight intensity={weather === 'rainy' ? 0.3 : weather === 'snowy' ? 0.8 : 0.7} />
             <directionalLight 
                 position={[10, 20, 10]} 
-                intensity={weather === 'sunny' ? 1.5 : 0.5} 
+                intensity={weather === 'sunny' ? 1.8 : 0.6} 
                 castShadow 
+                color={weather === 'sunny' ? "#fff7ed" : "#ffffff"} 
                 shadow-mapSize={[1024, 1024]} 
             >
                 <orthographicCamera attach="shadow-camera" args={[-20, 20, 20, -20]} />
             </directionalLight>
             
-            {/* Fog for atmosphere */}
+            {/* Fog for atmosphere - Warm haze if sunny */}
             <fog attach="fog" args={[
-                weather === 'rainy' ? '#1e293b' : weather === 'snowy' ? '#e2e8f0' : '#sky-900', // Fog color
+                weather === 'rainy' ? '#1e293b' : weather === 'snowy' ? '#e2e8f0' : '#fed7aa', // Orange-200 haze for Sunny
                 5, // Near
-                weather === 'sunny' ? 50 : 30 // Far
+                weather === 'sunny' ? 60 : 30 // Far
             ]} />
         </>
     );
@@ -1255,8 +1256,8 @@ interface IsoMapProps {
 const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, population, weather, happiness, congestion }) => {
   const [hoveredTile, setHoveredTile] = useState<{x: number, y: number} | null>(null);
 
-  // Background color based on weather
-  const bgColor = weather === 'sunny' ? '#0c4a6e' : weather === 'rainy' ? '#0f172a' : '#cbd5e1';
+  // Background color based on weather - Savannah Sky
+  const bgColor = weather === 'sunny' ? '#bae6fd' : weather === 'rainy' ? '#0f172a' : '#cbd5e1';
 
   return (
     <Canvas shadows dpr={[1, 2]} className="w-full h-full">
@@ -1284,41 +1285,53 @@ const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, populat
             // Highlight color
             let highlightColor = "white";
             if (isHovered) {
-                if (hoveredTool === BuildingType.None) highlightColor = "#fca5a5"; // Red for bulldoze
-                else highlightColor = "#86efac"; // Green for build
+                if (hoveredTool === BuildingType.None) highlightColor = "#ef4444"; // Red for bulldoze
+                else highlightColor = "#fcd34d"; // Gold for build
             }
 
             return (
               <group key={`${x}-${y}`} position={[wx, 0, wz]}>
                 
-                {/* Ground Tile */}
-                <mesh 
-                  receiveShadow 
-                  position={[0, -0.1, 0]} 
-                  scale={[0.98, 0.2, 0.98]}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onTileClick(x, y);
-                  }}
-                  onPointerOver={(e) => {
-                    e.stopPropagation();
-                    setHoveredTile({x, y});
-                    document.body.style.cursor = 'pointer';
-                  }}
-                  onPointerOut={(e) => {
-                    e.stopPropagation();
-                    setHoveredTile(null);
-                    document.body.style.cursor = 'auto';
-                  }}
-                >
-                  <boxGeometry />
-                  <meshStandardMaterial 
-                    color={isHovered ? highlightColor : "#10b981"} // Base grass color
-                    roughness={1}
-                  />
-                  {/* Selection Outline */}
-                  {isHovered && <Outlines thickness={0.05} color="white" />}
-                </mesh>
+                {/* Ground Tile - Red Soil + Green Grass Layer */}
+                <group position={[0, -0.1, 0]}>
+                   {/* Red Soil Base */}
+                   <mesh 
+                      receiveShadow 
+                      position={[0, -0.1, 0]} 
+                      scale={[0.98, 0.4, 0.98]}
+                    >
+                      <boxGeometry />
+                      <meshStandardMaterial color="#7c2d12" roughness={1} /> {/* Red Soil */}
+                   </mesh>
+                   {/* Grass Top */}
+                   <mesh 
+                      receiveShadow 
+                      position={[0, 0.11, 0]} 
+                      scale={[0.98, 0.05, 0.98]}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTileClick(x, y);
+                      }}
+                      onPointerOver={(e) => {
+                        e.stopPropagation();
+                        setHoveredTile({x, y});
+                        document.body.style.cursor = 'pointer';
+                      }}
+                      onPointerOut={(e) => {
+                        e.stopPropagation();
+                        setHoveredTile(null);
+                        document.body.style.cursor = 'auto';
+                      }}
+                    >
+                      <boxGeometry />
+                      <meshStandardMaterial 
+                        color={isHovered ? highlightColor : "#16a34a"} // Vibrant Green
+                        roughness={1}
+                      />
+                      {/* Selection Outline */}
+                      {isHovered && <Outlines thickness={0.05} color="#fbbf24" />}
+                   </mesh>
+                </group>
 
                 {/* Building or Road */}
                 {tile.buildingType !== BuildingType.None && (
@@ -1354,7 +1367,7 @@ const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, populat
       {/* Grid Base for aesthetics */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.21, 0]} receiveShadow>
         <planeGeometry args={[GRID_SIZE + 2, GRID_SIZE + 2]} />
-        <meshStandardMaterial color="#064e3b" />
+        <meshStandardMaterial color="#451a03" /> {/* Dark Earth Background */}
       </mesh>
 
     </Canvas>
