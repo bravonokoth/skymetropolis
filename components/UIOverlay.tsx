@@ -22,8 +22,11 @@ const tools = [
   BuildingType.None, // Bulldoze
   BuildingType.Road,
   BuildingType.Residential,
+  BuildingType.MixedUse,
   BuildingType.Commercial,
   BuildingType.Industrial,
+  BuildingType.PowerPlant,
+  BuildingType.WaterPump,
   BuildingType.Park,
 ];
 
@@ -59,7 +62,7 @@ const ToolButton: React.FC<{
         {isBulldoze && <div className="w-full h-full bg-red-600 text-white flex justify-center items-center font-bold text-base md:text-lg">✕</div>}
         {type === BuildingType.Road && <div className="w-full h-2 bg-gray-800 transform -rotate-45"></div>}
       </div>
-      <span className="text-[8px] md:text-[10px] font-bold text-white uppercase tracking-wider drop-shadow-md leading-none">{config.name}</span>
+      <span className="text-[8px] md:text-[10px] font-bold text-white uppercase tracking-wider drop-shadow-md leading-none text-center px-1">{config.name}</span>
       {config.cost > 0 && (
         <span className={`text-[8px] md:text-[10px] font-mono leading-none ${canAfford ? 'text-green-300' : 'text-red-400'}`}>${config.cost}</span>
       )}
@@ -105,7 +108,7 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
 
   // Determine pollution color and text
   const pollutionColor = stats.pollution < 30 ? 'text-green-400' : stats.pollution < 70 ? 'text-yellow-400' : 'text-purple-400';
-  const pollutionIcon = '🌫️'; // Fog/Pollution icon
+  const pollutionIcon = '🌫️'; 
 
   // Weather Icons
   const weatherIcons = {
@@ -114,6 +117,13 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
     snowy: '❄️'
   };
 
+  // Utility calculations for UI
+  const pRatio = stats.powerDemand > 0 ? stats.powerSupply / stats.powerDemand : 1;
+  const wRatio = stats.waterDemand > 0 ? stats.waterSupply / stats.waterDemand : 1;
+  
+  const powerColor = pRatio >= 1 ? 'text-yellow-400' : 'text-red-500 animate-pulse';
+  const waterColor = wRatio >= 1 ? 'text-blue-400' : 'text-red-500 animate-pulse';
+
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2 md:p-4 font-sans z-10">
       
@@ -121,31 +131,51 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
       <div className="flex flex-col md:flex-row md:justify-between md:items-start pointer-events-auto gap-2 w-full max-w-full">
         
         {/* Stats */}
-        <div className="bg-gray-900/90 text-white p-2 md:p-3 rounded-xl border border-gray-700 shadow-2xl backdrop-blur-md flex gap-3 md:gap-6 items-center justify-between md:justify-start w-full md:w-auto relative flex-wrap">
+        <div className="bg-gray-900/90 text-white p-2 md:p-3 rounded-xl border border-gray-700 shadow-2xl backdrop-blur-md flex gap-2 md:gap-4 items-center justify-between md:justify-start w-full md:w-auto relative flex-wrap">
           <div className="flex flex-col">
             <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Treasury</span>
             <span className="text-lg md:text-2xl font-black text-green-400 font-mono drop-shadow-md">${stats.money.toLocaleString()}</span>
           </div>
           <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
           <div className="flex flex-col">
-            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Citizens</span>
+            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Pop</span>
             <span className="text-base md:text-xl font-bold text-blue-300 font-mono drop-shadow-md">{stats.population.toLocaleString()}</span>
           </div>
           <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
            <div className="flex flex-col">
-            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Happiness</span>
+            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Happy</span>
             <span className={`text-base md:text-xl font-bold font-mono drop-shadow-md flex items-center gap-1 ${happinessColor}`}>
               <span className="text-lg">{happinessIcon}</span> {stats.happiness}%
             </span>
           </div>
+          
           <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
+
+           {/* Utility Stats */}
            <div className="flex flex-col">
+            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Power</span>
+            <span className={`text-base md:text-lg font-bold font-mono drop-shadow-md flex items-center gap-1 ${powerColor}`}>
+              ⚡ {Math.floor(stats.powerSupply)}/{stats.powerDemand}
+            </span>
+          </div>
+          <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
+          <div className="flex flex-col">
+            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Water</span>
+            <span className={`text-base md:text-lg font-bold font-mono drop-shadow-md flex items-center gap-1 ${waterColor}`}>
+              💧 {Math.floor(stats.waterSupply)}/{stats.waterDemand}
+            </span>
+          </div>
+
+          <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
+          
+          <div className="flex flex-col">
             <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Pollution</span>
-            <span className={`text-base md:text-xl font-bold font-mono drop-shadow-md flex items-center gap-1 ${pollutionColor}`}>
+            <span className={`text-base md:text-lg font-bold font-mono drop-shadow-md flex items-center gap-1 ${pollutionColor}`}>
               <span className="text-lg">{pollutionIcon}</span> {stats.pollution}
             </span>
           </div>
           <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
+          
           <div className="flex flex-col items-end ml-auto md:ml-0">
              <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Day</span>
              <span className="text-base md:text-lg font-bold text-white font-mono flex items-center gap-2">
@@ -154,13 +184,11 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
              </span>
           </div>
           
-          <div className="w-px h-6 md:h-8 bg-gray-700 ml-2 hidden md:block"></div>
-          
           <button 
             onClick={handleSaveClick}
             className={`
-              flex items-center justify-center p-2 rounded-lg transition-all duration-300 ml-auto md:ml-0
-              ${saveStatus === 'saved' ? 'bg-green-500/20 text-green-400 border border-green-500/50' : 'hover:bg-gray-800 text-gray-400 hover:text-white border border-transparent'}
+              flex items-center justify-center p-2 rounded-lg transition-all duration-300 ml-auto md:ml-0 border border-transparent
+              ${saveStatus === 'saved' ? 'bg-green-500/20 text-green-400 border-green-500/50' : 'hover:bg-gray-800 text-gray-400 hover:text-white'}
             `}
             title="Save Game"
           >
@@ -270,6 +298,25 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                             <span className="text-blue-400 font-mono font-bold text-sm">+{config.popGen}/day</span>
                         </div>
                     )}
+                    {(config.powerGen > 0 || config.waterGen > 0) && (
+                         <div className="flex justify-between items-center border-t border-gray-800 pt-1">
+                            <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Output</span>
+                            <span className="text-yellow-400 font-mono font-bold text-sm">
+                                {config.powerGen > 0 ? `+${config.powerGen} ⚡` : ''}
+                                {config.waterGen > 0 ? `+${config.waterGen} 💧` : ''}
+                            </span>
+                        </div>
+                    )}
+                    {(config.powerUsage > 0 || config.waterUsage > 0) && (
+                         <div className="flex justify-between items-center border-t border-gray-800 pt-1">
+                            <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Needs</span>
+                            <span className="text-orange-400 font-mono font-bold text-sm">
+                                {config.powerUsage > 0 ? `-${config.powerUsage} ⚡` : ''}
+                                {config.waterUsage > 0 ? ` -${config.waterUsage} 💧` : ''}
+                            </span>
+                        </div>
+                    )}
+
                     {config.type === BuildingType.None && (
                         <div className="text-red-400 font-bold flex items-center gap-2">
                            <span>⚠️</span> Clears selected tile

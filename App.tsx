@@ -41,7 +41,11 @@ function App() {
     day: 1, 
     happiness: 100,
     pollution: 0,
-    weather: 'sunny'
+    weather: 'sunny',
+    powerSupply: 0,
+    powerDemand: 0,
+    waterSupply: 0,
+    waterDemand: 0,
   });
   const [selectedTool, setSelectedTool] = useState<BuildingType>(BuildingType.Road);
   
@@ -123,7 +127,11 @@ function App() {
           ...gameState.stats, 
           happiness: gameState.stats.happiness ?? 100,
           pollution: gameState.stats.pollution ?? 0,
-          weather: gameState.stats.weather ?? 'sunny'
+          weather: gameState.stats.weather ?? 'sunny',
+          powerSupply: gameState.stats.powerSupply ?? 0,
+          powerDemand: gameState.stats.powerDemand ?? 0,
+          waterSupply: gameState.stats.waterSupply ?? 0,
+          waterDemand: gameState.stats.waterDemand ?? 0,
         });
         setCurrentGoal(gameState.currentGoal);
         setNewsFeed(gameState.newsFeed);
@@ -144,11 +152,10 @@ function App() {
     if (!gameStarted) return;
 
     if (newsFeed.length === 0) {
-       addNewsItem({ id: Date.now().toString(), text: "Welcome to SkyMetropolis. Terrain generation complete.", type: 'positive' });
+       addNewsItem({ id: Date.now().toString(), text: "Welcome to SkyMetropolis. Zoning approved.", type: 'positive' });
     }
     
     if (aiEnabled && !currentGoal) {
-      // @google/genai-api-key-fix: The API key's availability is a hard requirement and should not be checked in the UI.
       fetchNewGoal();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -160,73 +167,87 @@ function App() {
     if (!gameStarted) return;
 
     const intervalId = setInterval(() => {
-      // 1. Calculate income/pop gen
+      // 1. Calculate Util & Income/Pop
       let dailyIncome = 0;
       let dailyPopGrowth = 0;
       let buildingCounts: Record<string, number> = {};
+      
+      let pSupply = 0;
+      let wSupply = 0;
+      let pDemand = 0;
+      let wDemand = 0;
 
+      // Pass 1: Aggregate Supply/Demand
       gridRef.current.flat().forEach(tile => {
         if (tile.buildingType !== BuildingType.None) {
           const config = BUILDINGS[tile.buildingType];
-          dailyIncome += config.incomeGen;
-          dailyPopGrowth += config.popGen;
+          pSupply += config.powerGen;
+          wSupply += config.waterGen;
+          pDemand += config.powerUsage;
+          wDemand += config.waterUsage;
           buildingCounts[tile.buildingType] = (buildingCounts[tile.buildingType] || 0) + 1;
         }
       });
 
-      // Cap population growth by residential count just for some logic
-      const resCount = buildingCounts[BuildingType.Residential] || 0;
-      const maxPop = resCount * 50; // 50 people per house max
+      // Calculate Efficiency (0.0 - 1.0)
+      const powerEfficiency = pDemand > 0 ? Math.min(1, pSupply / pDemand) : 1;
+      const waterEfficiency = wDemand > 0 ? Math.min(1, wSupply / wDemand) : 1;
+      const utilityEfficiency = (powerEfficiency + waterEfficiency) / 2;
 
+      // Pass 2: Calculate Output based on Efficiency
+      gridRef.current.flat().forEach(tile => {
+         if (tile.buildingType !== BuildingType.None) {
+          const config = BUILDINGS[tile.buildingType];
+          // Income and Pop growth are stifled if utilities are missing
+          dailyIncome += config.incomeGen * utilityEfficiency;
+          dailyPopGrowth += config.popGen * utilityEfficiency;
+         }
+      });
+
+      // Cap population
+      const resCount = buildingCounts[BuildingType.Residential] || 0;
+      const mixedCount = buildingCounts[BuildingType.MixedUse] || 0;
+      const totalHousing = (resCount * 50) + (mixedCount * 100); 
+      
       // 2. Update Stats
       setStats(prev => {
         let newPop = prev.population + dailyPopGrowth;
-        if (newPop > maxPop) newPop = maxPop; // limit
-        if (resCount === 0 && prev.population > 0) newPop = Math.max(0, prev.population - 5); // people leave if no homes
+        if (newPop > totalHousing) newPop = totalHousing; 
+        if (totalHousing === 0 && prev.population > 0) newPop = Math.max(0, prev.population - 5);
 
-        // -- Pollution Calculation --
+        // -- Pollution --
         const indCount = buildingCounts[BuildingType.Industrial] || 0;
+        const powerCount = buildingCounts[BuildingType.PowerPlant] || 0;
         const parkCount = buildingCounts[BuildingType.Park] || 0;
         
-        // Factories create pollution, Parks reduce it
-        // 1 Factory = +10 pollution
-        // 1 Park = -5 pollution
-        let currentPollution = (indCount * 10) - (parkCount * 5);
+        // Factories & Power Plants pollute
+        let currentPollution = (indCount * 10) + (powerCount * 5) - (parkCount * 5);
         currentPollution = Math.max(0, Math.min(100, currentPollution));
 
-        // -- Happiness Calculation --
-        let newHappiness = 60; // Base baseline
+        // -- Happiness --
+        let newHappiness = 60; 
         
-        // Parks boost happiness (+5 each, up to 30)
         newHappiness += Math.min(parkCount * 5, 30);
-        
-        // Pollution reduces happiness significantly
         newHappiness -= Math.floor(currentPollution * 0.8);
         
-        // Overcrowding penalty
-        if (resCount > 0 && newPop > maxPop * 0.9) {
-          newHappiness -= 15;
-        }
-        
-        // Homelessness extreme penalty
-        if (resCount === 0 && newPop > 0) {
-          newHappiness = 10;
-        }
-        
-        // Wealth bonus (small)
+        if (totalHousing > 0 && newPop > totalHousing * 0.9) newHappiness -= 15; // Overcrowding
+        if (totalHousing === 0 && newPop > 0) newHappiness = 10; // Homelessness
+
+        // Utility Penalties
+        if (powerEfficiency < 1) newHappiness -= 20 * (1 - powerEfficiency);
+        if (waterEfficiency < 1) newHappiness -= 20 * (1 - waterEfficiency);
+
+        // Wealth bonus
         if (prev.money > 2000) newHappiness += 5;
 
-        // Weather effects on happiness
+        // Weather
         if (prev.weather === 'rainy') newHappiness -= 2;
         if (prev.weather === 'sunny') newHappiness += 2;
-        // Snow is neutral-ish, maybe slightly negative due to cold
         if (prev.weather === 'snowy') newHappiness -= 1;
 
-        // Clamp Happiness
         newHappiness = Math.max(0, Math.min(100, Math.floor(newHappiness)));
 
-        // -- Weather Update Logic --
-        // 5% chance to change weather each tick
+        // -- Weather Update --
         let currentWeather = prev.weather;
         if (Math.random() < 0.05) {
             const rand = Math.random();
@@ -237,11 +258,15 @@ function App() {
 
         const newStats = {
           money: prev.money + dailyIncome,
-          population: newPop,
+          population: Math.floor(newPop),
           day: prev.day + 1,
           happiness: newHappiness,
           pollution: currentPollution,
-          weather: currentWeather
+          weather: currentWeather,
+          powerSupply: pSupply,
+          powerDemand: pDemand,
+          waterSupply: wSupply,
+          waterDemand: wDemand
         };
         
         // 3. Check Goal Completion
@@ -262,7 +287,6 @@ function App() {
         return newStats;
       });
 
-      // 4. Trigger news
       fetchNews();
 
     }, TICK_RATE_MS);
@@ -274,11 +298,11 @@ function App() {
   // --- Interaction Logic ---
 
   const handleTileClick = useCallback((x: number, y: number) => {
-    if (!gameStarted) return; // Prevent clicking through start screen
+    if (!gameStarted) return; 
 
     const currentGrid = gridRef.current;
     const currentStats = statsRef.current;
-    const tool = selectedTool; // Capture current tool
+    const tool = selectedTool; 
     
     if (x < 0 || x >= GRID_SIZE || y < 0 || y >= GRID_SIZE) return;
 
@@ -294,7 +318,6 @@ function App() {
             newGrid[y][x] = { ...currentTile, buildingType: BuildingType.None };
             setGrid(newGrid);
             setStats(prev => ({ ...prev, money: prev.money - demolishCost }));
-            // Sound effect here
         } else {
             addNewsItem({id: Date.now().toString(), text: "Cannot afford demolition costs.", type: 'negative'});
         }
@@ -312,7 +335,6 @@ function App() {
         const newGrid = currentGrid.map(row => [...row]);
         newGrid[y][x] = { ...currentTile, buildingType: tool };
         setGrid(newGrid);
-        // Sound effect here
       } else {
         // Not enough money feedback
         addNewsItem({id: Date.now().toString() + Math.random(), text: `Treasury insufficient for ${buildingConfig.name}.`, type: 'negative'});
@@ -336,13 +358,14 @@ function App() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden selection:bg-transparent selection:text-transparent bg-sky-900">
-      {/* 3D Rendering Layer - Always visible now, providing background for start screen */}
+      {/* 3D Rendering Layer */}
       <IsoMap 
         grid={grid} 
         onTileClick={handleTileClick} 
         hoveredTool={selectedTool}
         population={stats.population}
         weather={stats.weather}
+        happiness={stats.happiness}
       />
       
       {/* Start Screen Overlay */}
@@ -365,17 +388,14 @@ function App() {
         />
       )}
 
-      {/* CSS for animations and utility */}
       <style>{`
         @keyframes fade-in { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
         .animate-fade-in { animation: fade-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
         
         .mask-image-b { -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 15%); mask-image: linear-gradient(to bottom, transparent 0%, black 15%); }
         
-        /* Vertical text for toolbar label */
         .writing-mode-vertical { writing-mode: vertical-rl; text-orientation: mixed; }
         
-        /* Custom scrollbar for news */
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }

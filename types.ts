@@ -9,6 +9,9 @@ export enum BuildingType {
   Commercial = 'Commercial',
   Industrial = 'Industrial',
   Park = 'Park',
+  PowerPlant = 'PowerPlant',
+  WaterPump = 'WaterPump',
+  MixedUse = 'MixedUse',
 }
 
 export interface BuildingConfig {
@@ -19,6 +22,10 @@ export interface BuildingConfig {
   color: string; // Main color for 3D material
   popGen: number; // Population generation per tick
   incomeGen: number; // Money generation per tick
+  powerUsage: number;
+  waterUsage: number;
+  powerGen: number;
+  waterGen: number;
 }
 
 export interface TileData {
@@ -40,6 +47,10 @@ export interface CityStats {
   happiness: number;
   pollution: number;
   weather: WeatherType;
+  powerSupply: number;
+  powerDemand: number;
+  waterSupply: number;
+  waterDemand: number;
 }
 
 export interface AIGoal {
