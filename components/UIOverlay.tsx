@@ -1,3 +1,4 @@
+
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -83,6 +84,7 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
 }) => {
   const newsRef = useRef<HTMLDivElement>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
   const [hoveredTool, setHoveredTool] = useState<BuildingType | null>(null);
 
   // Auto-scroll news
@@ -93,6 +95,13 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
   }, [newsFeed]);
 
   const handleSaveClick = () => {
+    if (saveStatus === 'idle') {
+      setShowSaveConfirmation(true);
+    }
+  };
+
+  const confirmSave = () => {
+    setShowSaveConfirmation(false);
     setSaveStatus('saving');
     onSave();
     // Simulate short delay for feedback
@@ -100,6 +109,10 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
     }, 500);
+  };
+
+  const cancelSave = () => {
+    setShowSaveConfirmation(false);
   };
 
   // Determine happiness color
@@ -380,6 +393,33 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
       <div className="absolute bottom-1 right-2 md:right-4 text-[8px] md:text-[9px] text-white/30 font-mono text-right pointer-events-auto hover:text-white/60 transition-colors">
         <a href="https://x.com/ammaar" target="_blank" rel="noreferrer">Created by @ammaar</a>
       </div>
+
+      {/* Save Confirmation Modal */}
+      {showSaveConfirmation && (
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center pointer-events-auto">
+          <div className="bg-gray-900 border border-gray-600 p-6 rounded-xl shadow-2xl max-w-sm w-full mx-4 transform transition-all scale-100 opacity-100">
+            <h3 className="text-xl font-bold text-white mb-2">Save Game?</h3>
+            <p className="text-gray-400 mb-6 text-sm">Are you sure you want to save your current progress? This will overwrite your previous save slot.</p>
+            <div className="flex justify-end gap-3">
+              <button 
+                onClick={cancelSave}
+                className="px-4 py-2 rounded-lg text-gray-300 hover:bg-gray-800 hover:text-white transition-colors text-sm font-semibold"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={confirmSave}
+                className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white shadow-lg shadow-green-900/20 transition-all text-sm font-bold flex items-center gap-2"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path d="M7.707 10.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6h5a2 2 0 012 2v7a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2h5v5.586l-1.293-1.293zM9 4a1 1 0 012 0v2H9V4z" />
+                </svg>
+                Yes, Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
