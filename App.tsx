@@ -51,6 +51,7 @@ function App() {
     goodsSupply: 0,
     goodsDemand: 0,
     safetyCoverage: 100,
+    trafficCongestion: 0,
     budget: {
       infrastructure: 100,
       power: 100,
@@ -151,6 +152,7 @@ function App() {
           goodsSupply: gameState.stats.goodsSupply ?? 0,
           goodsDemand: gameState.stats.goodsDemand ?? 0,
           safetyCoverage: gameState.stats.safetyCoverage ?? 100,
+          trafficCongestion: gameState.stats.trafficCongestion ?? 0,
           budget: gameState.stats.budget || {
             infrastructure: 100,
             power: 100,
@@ -229,6 +231,9 @@ function App() {
       let gSupply = 0;
       let gDemand = 0;
 
+      let trafficLoad = 0;
+      let roadCapacity = 0;
+
       // Pass 1: Aggregate Supply/Demand/Maintenance
       gridRef.current.flat().forEach(tile => {
         if (tile.buildingType !== BuildingType.None) {
@@ -250,9 +255,27 @@ function App() {
           pDemand += config.powerUsage;
           wDemand += config.waterUsage;
 
-          gSupply += config.goodsGen; // Goods production probably not tied to service budget, unless we add an Industrial budget
+          gSupply += config.goodsGen; 
           gDemand += config.goodsUsage;
           
+          // Traffic Logic
+          // Residential, Commercial, Industrial, MixedUse, School, Hospital generate traffic
+          if (tile.buildingType === BuildingType.Residential || 
+              tile.buildingType === BuildingType.Commercial || 
+              tile.buildingType === BuildingType.Industrial ||
+              tile.buildingType === BuildingType.MixedUse ||
+              tile.buildingType === BuildingType.School || 
+              tile.buildingType === BuildingType.Hospital) {
+              trafficLoad += 1;
+          }
+          
+          // Roads provide capacity
+          if (tile.buildingType === BuildingType.Road) {
+              // Elevated roads/Overpasses might provide better flow conceptually, 
+              // but for now simple count.
+              roadCapacity += 5; // Each road tile supports 5 units of traffic comfortably
+          }
+
           buildingCounts[tile.buildingType] = (buildingCounts[tile.buildingType] || 0) + 1;
         }
       });
@@ -263,6 +286,14 @@ function App() {
       const goodsEfficiency = gDemand > 0 ? Math.min(1, gSupply / gDemand) : 1;
       
       const basicUtilEfficiency = (powerEfficiency + waterEfficiency) / 2;
+
+      // Calculate Traffic Congestion
+      let currentTrafficCongestion = 0;
+      if (roadCapacity > 0) {
+          currentTrafficCongestion = Math.min(100, (trafficLoad / roadCapacity) * 100);
+      } else if (trafficLoad > 0) {
+          currentTrafficCongestion = 100; // Gridlock if no roads
+      }
 
       // Pass 2: Calculate Output based on Efficiency
       gridRef.current.flat().forEach(tile => {
@@ -338,8 +369,13 @@ function App() {
         if (safetyCov < 50) newHappiness -= 15 * (1 - safetyCov/50); // Crime rampant
         else if (safetyCov > 90) newHappiness += 5;
 
-        // Supply chain happiness (indirectly via income, but also consumer satisfaction)
+        // Supply chain happiness
         if (goodsEfficiency < 0.5) newHappiness -= 5; // Shortages
+
+        // Traffic Penalty
+        if (currentTrafficCongestion > 60) {
+            newHappiness -= Math.floor((currentTrafficCongestion - 60) * 0.5);
+        }
 
         // Wealth bonus
         if (prev.money > 2000) newHappiness += 5;
@@ -360,11 +396,10 @@ function App() {
             else currentWeather = 'snowy';
         }
         
-        // Check bankruptcy/negative money logic if desired (optional)
         const netIncome = dailyIncome - dailyMaintenance;
 
         const newStats = {
-          ...prev, // Preserve budget and other existing fields
+          ...prev, 
           money: prev.money + netIncome,
           population: newPop,
           day: prev.day + 1,
@@ -380,6 +415,7 @@ function App() {
           goodsSupply: gSupply,
           goodsDemand: gDemand,
           safetyCoverage: Math.floor(safetyCov),
+          trafficCongestion: Math.floor(currentTrafficCongestion),
         };
         
         // 3. Check Goal Completion
@@ -511,6 +547,7 @@ function App() {
         population={stats.population}
         weather={stats.weather}
         happiness={stats.happiness}
+        congestion={stats.trafficCongestion}
       />
       
       {/* Start Screen Overlay */}

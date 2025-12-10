@@ -24,6 +24,7 @@ declare global {
       circleGeometry: any;
       ringGeometry: any;
       cylinderGeometry: any;
+      sphereGeometry: any;
       ambientLight: any;
       directionalLight: any;
       fog: any;
@@ -48,6 +49,7 @@ declare module 'react' {
       circleGeometry: any;
       ringGeometry: any;
       cylinderGeometry: any;
+      sphereGeometry: any;
       ambientLight: any;
       directionalLight: any;
       fog: any;
@@ -539,14 +541,6 @@ const BridgeRoadSegment = ({ x, y, grid, isOverpass }: { x: number, y: number, g
     const rampS = y < GRID_SIZE-1 && getRoadLevel(grid[y+1][x]) === 0;
     const rampE = x < GRID_SIZE-1 && getRoadLevel(grid[y][x+1]) === 0;
     const rampW = x > 0 && getRoadLevel(grid[y][x-1]) === 0;
-
-    // Overpass variants force direction of bridge
-    // Variant 2: Overpass NS (Ground Vertical?), wait app logic:
-    // 2: Overpass NS (Bridge East-West? Let's assume opposite to ground)
-    // Actually from App.tsx comments: 2=Overpass NS (Bridge?), 3=Overpass EW
-    // Let's infer from neighbors if generic bridge (variant 1), but force if overpass
-    
-    // Simplification: Render bridge pieces based on any connection
     
     return (
         <group position={[0, 0, 0]}>
@@ -562,8 +556,6 @@ const BridgeRoadSegment = ({ x, y, grid, isOverpass }: { x: number, y: number, g
              </mesh>
 
              {/* Connections */}
-             {/* If not connected to bridge, do we show wall or ramp? */}
-             
              {/* Ramp N */}
              {rampN && (
                  <group position={[0, ELEVATION_HEIGHT/2, -0.75]} rotation={[0.4, 0, 0]}>
@@ -602,14 +594,12 @@ const BridgeRoadSegment = ({ x, y, grid, isOverpass }: { x: number, y: number, g
              )}
 
              {/* Railings */}
-             {/* Render simple railings on sides that don't connect */}
              {!n && !rampN && <mesh position={[0, ELEVATION_HEIGHT + 0.15, -0.45]} scale={[1, 0.2, 0.1]}><boxGeometry /><meshStandardMaterial color="#cbd5e1" /></mesh>}
              {!s && !rampS && <mesh position={[0, ELEVATION_HEIGHT + 0.15, 0.45]} scale={[1, 0.2, 0.1]}><boxGeometry /><meshStandardMaterial color="#cbd5e1" /></mesh>}
              {!e && !rampE && <mesh position={[0.45, ELEVATION_HEIGHT + 0.15, 0]} scale={[0.1, 0.2, 1]}><boxGeometry /><meshStandardMaterial color="#cbd5e1" /></mesh>}
              {!w && !rampW && <mesh position={[-0.45, ELEVATION_HEIGHT + 0.15, 0]} scale={[0.1, 0.2, 1]}><boxGeometry /><meshStandardMaterial color="#cbd5e1" /></mesh>}
 
              {/* Pillars */}
-             {/* Only render pillars if NOT an overpass (would block road below) or if specifically placed at corners */}
              {!isOverpass && (
                  <>
                     <mesh position={[0.4, ELEVATION_HEIGHT/2, 0.4]} scale={[0.1, ELEVATION_HEIGHT, 0.1]} castShadow>
@@ -647,17 +637,6 @@ const RoadSystem = React.memo(({ x, y, grid }: { x: number, y: number, grid: Gri
     const tile = grid[y][x];
     const v = tile.variant || 0;
     
-    // Variant 0: Ground Only
-    // Variant 1: Bridge Only
-    // Variant 2: Overpass (Ground NS, Bridge EW) - App.tsx calls this "Overpass NS" but visually let's interpret
-    // Variant 3: Overpass (Ground EW, Bridge NS)
-
-    // Interpretation:
-    // 0: Ground
-    // 1: Bridge (Auto-connect)
-    // 2: Ground Vertical, Bridge Horizontal
-    // 3: Ground Horizontal, Bridge Vertical
-    
     const isGround = v === 0 || v === 2 || v === 3;
     const isBridge = v === 1 || v === 2 || v === 3;
     const isOverpass = v === 2 || v === 3;
@@ -673,6 +652,276 @@ const RoadSystem = React.memo(({ x, y, grid }: { x: number, y: number, grid: Gri
         </group>
     );
 });
+
+
+// --- 3. Traffic System ---
+
+const TrafficLight = ({ position, state }: { position: [number, number, number], state: 'green' | 'red' }) => {
+    return (
+        <group position={position}>
+            {/* Pole */}
+            <mesh position={[0, 0.5, 0]} scale={[0.05, 1, 0.05]}>
+                <cylinderGeometry />
+                <meshStandardMaterial color="#475569" />
+            </mesh>
+            {/* Box */}
+            <mesh position={[0, 0.9, 0]} scale={[0.15, 0.3, 0.15]}>
+                <boxGeometry />
+                <meshStandardMaterial color="#1e293b" />
+            </mesh>
+            {/* Light */}
+            <mesh position={[0, 0.9, 0.08]} scale={[0.1, 0.1, 0.05]}>
+                <sphereGeometry />
+                <meshBasicMaterial color={state === 'green' ? '#22c55e' : '#ef4444'} />
+            </mesh>
+        </group>
+    );
+};
+
+// Simple Agent Logic
+interface CarAgent {
+    id: number;
+    x: number;
+    y: number;
+    // Current world position (for smooth animation)
+    wx: number;
+    wy: number;
+    // Target world position
+    tx: number;
+    ty: number;
+    
+    speed: number;
+    color: string;
+    
+    // Direction: 0=N, 1=E, 2=S, 3=W
+    heading: number;
+    
+    // Waiting for light?
+    waiting: boolean;
+}
+
+const TrafficSystem = ({ grid, congestion }: { grid: Grid, congestion: number }) => {
+    const [cars, setCars] = useState<CarAgent[]>([]);
+    const carsRef = useRef<CarAgent[]>([]);
+    const trafficLightTimer = useRef(0);
+    const [lightState, setLightState] = useState<'NS' | 'EW'>('NS'); // NS = NS Green, EW Red
+    
+    const instanceRef = useRef<THREE.InstancedMesh>(null);
+    const dummy = useMemo(() => new THREE.Object3D(), []);
+
+    // Color palette for cars
+    const carColors = useMemo(() => ["#ef4444", "#3b82f6", "#eab308", "#ffffff", "#000000", "#10b981"], []);
+
+    // Initialize/Update Cars based on Congestion
+    useEffect(() => {
+        // Count road tiles
+        let roadTiles: {x: number, y: number}[] = [];
+        grid.forEach((row, y) => row.forEach((tile, x) => {
+            if (tile.buildingType === BuildingType.Road && (tile.variant === 0 || tile.variant === 2 || tile.variant === 3)) {
+                roadTiles.push({x, y});
+            }
+        }));
+
+        if (roadTiles.length === 0) return;
+
+        // Desired car count: 1 car per 2 road tiles at max congestion? 
+        // Let's say max 50 cars for performance, scaled by congestion.
+        // Or simply: Congestion % of max capacity.
+        const maxCapacity = Math.min(50, roadTiles.length);
+        const desiredCount = Math.floor(maxCapacity * (congestion / 100));
+
+        // Adjust array size
+        const currentCount = carsRef.current.length;
+        if (desiredCount > currentCount) {
+             // Add cars
+             const toAdd = desiredCount - currentCount;
+             for (let i=0; i<toAdd; i++) {
+                 const tile = roadTiles[Math.floor(Math.random() * roadTiles.length)];
+                 const [wx, wy, wz] = gridToWorld(tile.x, tile.y);
+                 carsRef.current.push({
+                     id: Math.random(),
+                     x: tile.x,
+                     y: tile.y,
+                     wx: wx,
+                     wy: wz,
+                     tx: wx, // Start stationary-ish
+                     ty: wz,
+                     speed: getRandomRange(0.02, 0.05),
+                     color: carColors[Math.floor(Math.random() * carColors.length)],
+                     heading: Math.floor(Math.random() * 4),
+                     waiting: false
+                 });
+             }
+        } else if (desiredCount < currentCount) {
+             // Remove random cars
+             carsRef.current = carsRef.current.slice(0, desiredCount);
+        }
+        
+    }, [congestion, grid, carColors]);
+
+    // Traffic Logic Loop
+    useFrame((state, delta) => {
+        // Toggle Lights
+        trafficLightTimer.current += delta;
+        if (trafficLightTimer.current > 5) { // Switch every 5 seconds
+            setLightState(prev => prev === 'NS' ? 'EW' : 'NS');
+            trafficLightTimer.current = 0;
+        }
+
+        // Move Cars
+        carsRef.current.forEach(car => {
+            const dx = car.tx - car.wx;
+            const dy = car.ty - car.wy;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            
+            // Check for traffic light stop
+            // Logic: If close to center of tile (dist < 0.4) and tile is intersection and light is red for heading
+            // Simple approach: Intersection is tile with > 2 neighbors.
+            
+            let shouldWait = false;
+            
+            // Re-check grid logic for intersection
+            // This is heavy inside loop, ideally pre-calculated map
+            // We approximate: if dist < 0.1, we are arriving at center. Check next move.
+            
+            if (dist < 0.05) {
+                // Arrived at target (center of a tile)
+                // Pick next tile
+                car.wx = car.tx;
+                car.wy = car.ty;
+                
+                // Current Tile Coords
+                // Map world back to grid? 
+                // Grid x = wx + offset
+                const gx = Math.round(car.wx + WORLD_OFFSET);
+                const gy = Math.round(car.wy + WORLD_OFFSET);
+                
+                // Find neighbors
+                const neighbors = [
+                    { x: gx, y: gy - 1, h: 0 }, // N
+                    { x: gx + 1, y: gy, h: 1 }, // E
+                    { x: gx, y: gy + 1, h: 2 }, // S
+                    { x: gx - 1, y: gy, h: 3 }  // W
+                ].filter(n => {
+                    if (n.x < 0 || n.x >= GRID_SIZE || n.y < 0 || n.y >= GRID_SIZE) return false;
+                    const tile = grid[n.y][n.x];
+                    // Only ground roads for now
+                    return tile.buildingType === BuildingType.Road && (tile.variant === 0 || tile.variant === 2 || tile.variant === 3);
+                });
+
+                // Intersection Check for Light
+                // If neighbors.length > 2, it's intersection.
+                const isIntersection = neighbors.length > 2;
+
+                if (isIntersection) {
+                     // Check light
+                     // If moving NS (heading 0 or 2) and light is EW
+                     const isNS = car.heading === 0 || car.heading === 2;
+                     if ((isNS && lightState === 'EW') || (!isNS && lightState === 'NS')) {
+                         // Wait here? No, real cars wait BEFORE entering.
+                         // But for simple sim, let's just pause them if they try to leave?
+                         // Or better: Visual traffic lights exist, so let's pause.
+                         shouldWait = true;
+                     }
+                }
+                
+                if (!shouldWait) {
+                    // Filter out reverse direction unless dead end
+                    const validMoves = neighbors.filter(n => Math.abs(n.h - car.heading) !== 2);
+                    const nextMove = validMoves.length > 0 
+                        ? validMoves[Math.floor(Math.random() * validMoves.length)] 
+                        : neighbors[0]; // Dead end, turn back
+                    
+                    if (nextMove) {
+                        const [nx, ny, nz] = gridToWorld(nextMove.x, nextMove.y);
+                        car.tx = nx;
+                        car.ty = nz;
+                        car.heading = nextMove.h;
+                    }
+                }
+            } else {
+                 // Move towards target
+                 if (!car.waiting) {
+                    const move = Math.min(dist, car.speed);
+                    car.wx += (dx / dist) * move;
+                    car.wy += (dy / dist) * move;
+                 }
+            }
+            
+            car.waiting = shouldWait;
+        });
+
+        // Update Instances
+        if (instanceRef.current) {
+             carsRef.current.forEach((car, i) => {
+                 // Offset for lane (Right hand drive)
+                 // Headings: 0=N (z-), 1=E (x+), 2=S (z+), 3=W (x-)
+                 let laneOffsetX = 0;
+                 let laneOffsetY = 0;
+                 const laneWidth = 0.15;
+                 
+                 if (car.heading === 0) laneOffsetX = laneWidth;
+                 if (car.heading === 1) laneOffsetY = laneWidth;
+                 if (car.heading === 2) laneOffsetX = -laneWidth;
+                 if (car.heading === 3) laneOffsetY = -laneWidth;
+
+                 dummy.position.set(car.wx + laneOffsetX, 0.1, car.wy + laneOffsetY);
+                 
+                 // Rotation
+                 let rot = 0;
+                 if (car.heading === 0) rot = Math.PI;
+                 if (car.heading === 1) rot = Math.PI/2;
+                 if (car.heading === 2) rot = 0;
+                 if (car.heading === 3) rot = -Math.PI/2;
+                 dummy.rotation.set(0, rot, 0);
+                 
+                 dummy.scale.set(0.2, 0.15, 0.35); // Car shape
+                 dummy.updateMatrix();
+                 instanceRef.current!.setMatrixAt(i, dummy.matrix);
+                 instanceRef.current!.setColorAt(i, new THREE.Color(car.color));
+             });
+             instanceRef.current.instanceMatrix.needsUpdate = true;
+             if (instanceRef.current.instanceColor) instanceRef.current.instanceColor.needsUpdate = true;
+             instanceRef.current.count = carsRef.current.length;
+        }
+
+    });
+
+    return (
+        <group>
+            {/* Cars */}
+            <instancedMesh ref={instanceRef} args={[undefined, undefined, 50]} castShadow>
+                <boxGeometry />
+                <meshStandardMaterial />
+            </instancedMesh>
+            
+            {/* Traffic Lights */}
+            {grid.map((row, y) => row.map((tile, x) => {
+                if (tile.buildingType !== BuildingType.Road) return null;
+                // Identify intersection
+                 const n = y > 0 && getRoadLevel(grid[y-1][x]) !== -1;
+                 const s = y < GRID_SIZE-1 && getRoadLevel(grid[y+1][x]) !== -1;
+                 const e = x < GRID_SIZE-1 && getRoadLevel(grid[y][x+1]) !== -1;
+                 const w = x > 0 && getRoadLevel(grid[y][x-1]) !== -1;
+                 if ((n?1:0) + (s?1:0) + (e?1:0) + (w?1:0) > 2) {
+                     const [wx, wy, wz] = gridToWorld(x, y);
+                     return (
+                         <group key={`light-${x}-${y}`} position={[wx, 0, wz]}>
+                            {/* Render light based on state. 
+                                NS Green = Green light facing N/S traffic.
+                             */}
+                             <TrafficLight position={[0.4, 0, 0.4]} state={lightState === 'NS' ? 'green' : 'red'} />
+                             <TrafficLight position={[-0.4, 0, -0.4]} state={lightState === 'NS' ? 'green' : 'red'} />
+                             <TrafficLight position={[-0.4, 0, 0.4]} state={lightState === 'EW' ? 'green' : 'red'} />
+                             <TrafficLight position={[0.4, 0, -0.4]} state={lightState === 'EW' ? 'green' : 'red'} />
+                         </group>
+                     );
+                 }
+                 return null;
+            }))}
+        </group>
+    );
+};
 
 
 // --- 3. Weather & Environment ---
@@ -760,9 +1009,10 @@ interface IsoMapProps {
   population: number;
   weather: WeatherType;
   happiness: number;
+  congestion: number;
 }
 
-const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, population, weather, happiness }) => {
+const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, population, weather, happiness, congestion }) => {
   const [hoveredTile, setHoveredTile] = useState<{x: number, y: number} | null>(null);
 
   // Background color based on weather
@@ -857,6 +1107,8 @@ const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, populat
           })
         )}
       </group>
+      
+      <TrafficSystem grid={grid} congestion={congestion} />
 
       {/* Grid Base for aesthetics */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.21, 0]} receiveShadow>

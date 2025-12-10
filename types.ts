@@ -75,6 +75,7 @@ export interface CityStats {
   goodsSupply: number;
   goodsDemand: number;
   safetyCoverage: number; // 0-100%
+  trafficCongestion: number; // 0-100%
   budget: BudgetAllocation;
 }
 

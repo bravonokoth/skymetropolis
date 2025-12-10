@@ -160,6 +160,9 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
   const pollutionColor = stats.pollution < 30 ? 'text-green-400' : stats.pollution < 70 ? 'text-yellow-400' : 'text-purple-400';
   const pollutionIcon = '🌫️'; 
 
+  // Traffic Color
+  const trafficColor = stats.trafficCongestion < 40 ? 'text-green-400' : stats.trafficCongestion < 75 ? 'text-yellow-400' : 'text-red-500';
+
   // Weather Icons
   const weatherIcons = {
     sunny: '☀️',
@@ -254,11 +257,17 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
           <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
           
           <div className="flex flex-col">
-            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Pollution</span>
-            <span className={`text-base md:text-lg font-bold font-mono drop-shadow-md flex items-center gap-1 ${pollutionColor}`}>
-              <span className="text-lg">{pollutionIcon}</span> {stats.pollution}
-            </span>
+             <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Env</span>
+             <div className="flex gap-2">
+                <span className={`text-base font-bold font-mono drop-shadow-md flex items-center gap-1 ${pollutionColor}`} title={`Pollution: ${stats.pollution}`}>
+                  {pollutionIcon}
+                </span>
+                 <span className={`text-base font-bold font-mono drop-shadow-md flex items-center gap-1 ${trafficColor}`} title={`Traffic: ${stats.trafficCongestion}%`}>
+                  🚗
+                </span>
+             </div>
           </div>
+          
           <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
           
           <div className="flex flex-col items-end ml-auto md:ml-0">
