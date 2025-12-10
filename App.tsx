@@ -428,7 +428,7 @@ function App() {
         const demolishCost = 5;
         if (currentStats.money >= demolishCost) {
             const newGrid = currentGrid.map(row => [...row]);
-            newGrid[y][x] = { ...currentTile, buildingType: BuildingType.None };
+            newGrid[y][x] = { ...currentTile, buildingType: BuildingType.None, variant: 0 };
             setGrid(newGrid);
             setStats(prev => ({ ...prev, money: prev.money - demolishCost }));
         } else {
@@ -436,6 +436,28 @@ function App() {
         }
       }
       return;
+    }
+
+    // Special Road Logic: Upgrade to Bridge/Overpass
+    if (tool === BuildingType.Road && currentTile.buildingType === BuildingType.Road) {
+       // Cycle through variants: 0 (Ground) -> 1 (Bridge) -> 2 (Overpass NS) -> 3 (Overpass EW) -> 0
+       const newVariant = ((currentTile.variant || 0) + 1) % 4;
+       
+       let variantName = "Elevated Road";
+       if (newVariant === 0) variantName = "Ground Road";
+       if (newVariant === 2 || newVariant === 3) variantName = "Intersection Bridge";
+
+       const upgradeCost = 50; // Flat fee for infrastructure upgrade
+       if (currentStats.money >= upgradeCost) {
+          const newGrid = currentGrid.map(row => [...row]);
+          newGrid[y][x] = { ...currentTile, variant: newVariant };
+          setGrid(newGrid);
+          setStats(prev => ({ ...prev, money: prev.money - upgradeCost }));
+          addNewsItem({id: Date.now().toString(), text: `Upgraded to ${variantName}`, type: 'neutral'});
+       } else {
+          addNewsItem({id: Date.now().toString(), text: "Insufficient funds for road upgrade.", type: 'negative'});
+       }
+       return;
     }
 
     // Placement Logic
@@ -446,7 +468,7 @@ function App() {
         
         // Place building
         const newGrid = currentGrid.map(row => [...row]);
-        newGrid[y][x] = { ...currentTile, buildingType: tool };
+        newGrid[y][x] = { ...currentTile, buildingType: tool, variant: 0 };
         setGrid(newGrid);
       } else {
         // Not enough money feedback

@@ -23,6 +23,7 @@ declare global {
       planeGeometry: any;
       circleGeometry: any;
       ringGeometry: any;
+      cylinderGeometry: any;
       ambientLight: any;
       directionalLight: any;
       fog: any;
@@ -46,6 +47,7 @@ declare module 'react' {
       planeGeometry: any;
       circleGeometry: any;
       ringGeometry: any;
+      cylinderGeometry: any;
       ambientLight: any;
       directionalLight: any;
       fog: any;
@@ -466,23 +468,34 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
   );
 });
 
-// --- 2. Road System (Enhanced) ---
+// --- 2. Road System (Enhanced with Bridges/Tunnels) ---
 
-const RoadMarkings = React.memo(({ x, y, grid }: { x: number, y: number, grid: Grid }) => {
-    // Check neighbors
-    const n = y > 0 && grid[y-1][x].buildingType === BuildingType.Road;
-    const s = y < GRID_SIZE-1 && grid[y+1][x].buildingType === BuildingType.Road;
-    const e = x < GRID_SIZE-1 && grid[y][x+1].buildingType === BuildingType.Road;
-    const w = x > 0 && grid[y][x-1].buildingType === BuildingType.Road;
+const ELEVATION_HEIGHT = 0.5;
 
-    const neighborCount = (n?1:0) + (s?1:0) + (e?1:0) + (w?1:0);
+// Helper to determine road level: 0=Ground, 1=Bridge, 2=Both
+const getRoadLevel = (tile: TileData) => {
+    if (tile.buildingType !== BuildingType.Road) return -1;
+    const v = tile.variant || 0;
+    if (v === 0) return 0; // Ground
+    if (v === 1) return 1; // Elevated
+    return 2; // Overpass (Both)
+};
+
+const GroundRoadSegment = ({ x, y, grid, overrideVertical = false, overrideHorizontal = false }: { x: number, y: number, grid: Grid, overrideVertical?: boolean, overrideHorizontal?: boolean }) => {
+    // Check neighbors for ground connection
+    const n = y > 0 && getRoadLevel(grid[y-1][x]) !== 1; // 0 or 2 connects
+    const s = y < GRID_SIZE-1 && getRoadLevel(grid[y+1][x]) !== 1;
+    const e = x < GRID_SIZE-1 && getRoadLevel(grid[y][x+1]) !== 1;
+    const w = x > 0 && getRoadLevel(grid[y][x-1]) !== 1;
+    
+    // For intersection overpasses, force straight connection
+    const connectN = overrideVertical ? true : overrideHorizontal ? false : n;
+    const connectS = overrideVertical ? true : overrideHorizontal ? false : s;
+    const connectE = overrideHorizontal ? true : overrideVertical ? false : e;
+    const connectW = overrideHorizontal ? true : overrideVertical ? false : w;
+
+    const neighborCount = (connectN?1:0) + (connectS?1:0) + (connectE?1:0) + (connectW?1:0);
     const isIntersection = neighborCount > 2;
-    const isStraight = (n && s && !e && !w) || (!n && !s && e && w);
-    const isTurn = neighborCount === 2 && !isStraight;
-    const isDeadEnd = neighborCount === 1;
-
-    // Deterministic random for decorations
-    const hash = getHash(x, y);
 
     return (
         <group position={[0, 0.01, 0]}>
@@ -492,90 +505,175 @@ const RoadMarkings = React.memo(({ x, y, grid }: { x: number, y: number, grid: G
                  <meshStandardMaterial color="#374151" roughness={0.9} />
              </mesh>
 
-             {/* 1. Center Lines (Yellow) */}
-             {/* Only draw center lines if NOT an intersection, to avoid clutter */}
+             {/* Yellow Lines */}
              {!isIntersection && (
                 <>
-                   {/* Vertical Line */}
-                   {(n || s) && (
-                       <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, 0]} scale={[0.05, 1, 1]}>
-                           <planeGeometry />
-                           <meshBasicMaterial color="#fbbf24" />
-                       </mesh>
-                   )}
-                   {/* Horizontal Line */}
-                   {(e || w) && (
-                       <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, 0]} scale={[1, 0.05, 1]}>
-                           <planeGeometry />
-                           <meshBasicMaterial color="#fbbf24" />
-                       </mesh>
-                   )}
-                    {/* Curved Corner Lines */}
-                    {isTurn && (
-                       <group>
-                           {/* Masking the center overlapping lines is hard, so we just add a curve overlay or keep it simple with crossing lines for now. 
-                               The straight lines above actually form a cross, so for a turn we might want to hide half of them. 
-                               Simpler approach: Just cover the center for turns.
-                           */}
-                           <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.006, 0]} scale={[0.1, 0.1, 1]}>
-                               <planeGeometry />
-                               <meshBasicMaterial color="#fbbf24" />
-                           </mesh>
-                       </group>
-                    )}
+                   {(connectN || connectS) && <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, 0]} scale={[0.05, 1, 1]}><planeGeometry /><meshBasicMaterial color="#fbbf24" /></mesh>}
+                   {(connectE || connectW) && <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, 0]} scale={[1, 0.05, 1]}><planeGeometry /><meshBasicMaterial color="#fbbf24" /></mesh>}
                 </>
              )}
 
-             {/* 2. Stop Lines (White) at Intersections */}
+             {/* White Stop Lines */}
              {isIntersection && (
                  <>
-                    {n && <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, -0.35]} scale={[0.8, 0.1, 1]}><planeGeometry /><meshBasicMaterial color="white" /></mesh>}
-                    {s && <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, 0.35]} scale={[0.8, 0.1, 1]}><planeGeometry /><meshBasicMaterial color="white" /></mesh>}
-                    {e && <mesh rotation={[-Math.PI/2, 0, 0]} position={[0.35, 0.005, 0]} scale={[0.1, 0.8, 1]}><planeGeometry /><meshBasicMaterial color="white" /></mesh>}
-                    {w && <mesh rotation={[-Math.PI/2, 0, 0]} position={[-0.35, 0.005, 0]} scale={[0.1, 0.8, 1]}><planeGeometry /><meshBasicMaterial color="white" /></mesh>}
-                    
-                    {/* Darker center for intersection */}
-                    <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.002, 0]} scale={[0.4, 0.4, 1]}>
-                        <planeGeometry />
-                        <meshBasicMaterial color="#1f2937" transparent opacity={0.5} />
+                    {connectN && <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, -0.35]} scale={[0.8, 0.1, 1]}><planeGeometry /><meshBasicMaterial color="white" /></mesh>}
+                    {connectS && <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, 0.35]} scale={[0.8, 0.1, 1]}><planeGeometry /><meshBasicMaterial color="white" /></mesh>}
+                    {connectE && <mesh rotation={[-Math.PI/2, 0, 0]} position={[0.35, 0.005, 0]} scale={[0.1, 0.8, 1]}><planeGeometry /><meshBasicMaterial color="white" /></mesh>}
+                    {connectW && <mesh rotation={[-Math.PI/2, 0, 0]} position={[-0.35, 0.005, 0]} scale={[0.1, 0.8, 1]}><planeGeometry /><meshBasicMaterial color="white" /></mesh>}
+                    <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.002, 0]} scale={[0.4, 0.4, 1]}><planeGeometry /><meshBasicMaterial color="#1f2937" transparent opacity={0.5} /></mesh>
+                 </>
+             )}
+        </group>
+    );
+};
+
+const BridgeRoadSegment = ({ x, y, grid, isOverpass }: { x: number, y: number, grid: Grid, isOverpass: boolean }) => {
+    // Check neighbors for bridge connection
+    const n = y > 0 && getRoadLevel(grid[y-1][x]) > 0;
+    const s = y < GRID_SIZE-1 && getRoadLevel(grid[y+1][x]) > 0;
+    const e = x < GRID_SIZE-1 && getRoadLevel(grid[y][x+1]) > 0;
+    const w = x > 0 && getRoadLevel(grid[y][x-1]) > 0;
+
+    // Check neighbors for ramps (if they are Ground Road Only)
+    const rampN = y > 0 && getRoadLevel(grid[y-1][x]) === 0;
+    const rampS = y < GRID_SIZE-1 && getRoadLevel(grid[y+1][x]) === 0;
+    const rampE = x < GRID_SIZE-1 && getRoadLevel(grid[y][x+1]) === 0;
+    const rampW = x > 0 && getRoadLevel(grid[y][x-1]) === 0;
+
+    // Overpass variants force direction of bridge
+    // Variant 2: Overpass NS (Ground Vertical?), wait app logic:
+    // 2: Overpass NS (Bridge East-West? Let's assume opposite to ground)
+    // Actually from App.tsx comments: 2=Overpass NS (Bridge?), 3=Overpass EW
+    // Let's infer from neighbors if generic bridge (variant 1), but force if overpass
+    
+    // Simplification: Render bridge pieces based on any connection
+    
+    return (
+        <group position={[0, 0, 0]}>
+             {/* Central Deck */}
+             <mesh position={[0, ELEVATION_HEIGHT, 0]} scale={[1, 0.1, 1]} castShadow receiveShadow>
+                <boxGeometry />
+                <meshStandardMaterial color="#94a3b8" /> {/* Concrete Side */}
+             </mesh>
+             {/* Asphalt Top */}
+             <mesh position={[0, ELEVATION_HEIGHT + 0.051, 0]} rotation={[-Math.PI/2, 0, 0]} scale={[0.9, 0.9, 1]}>
+                 <planeGeometry />
+                 <meshStandardMaterial color="#334155" roughness={0.8} />
+             </mesh>
+
+             {/* Connections */}
+             {/* If not connected to bridge, do we show wall or ramp? */}
+             
+             {/* Ramp N */}
+             {rampN && (
+                 <group position={[0, ELEVATION_HEIGHT/2, -0.75]} rotation={[0.4, 0, 0]}>
+                     <mesh position={[0, 0, 0]} scale={[1, 0.1, 0.8]}>
+                        <boxGeometry />
+                        <meshStandardMaterial color="#334155" />
+                     </mesh>
+                 </group>
+             )}
+             {/* Ramp S */}
+             {rampS && (
+                 <group position={[0, ELEVATION_HEIGHT/2, 0.75]} rotation={[-0.4, 0, 0]}>
+                     <mesh position={[0, 0, 0]} scale={[1, 0.1, 0.8]}>
+                        <boxGeometry />
+                        <meshStandardMaterial color="#334155" />
+                     </mesh>
+                 </group>
+             )}
+              {/* Ramp E */}
+             {rampE && (
+                 <group position={[0.75, ELEVATION_HEIGHT/2, 0]} rotation={[0, 0, -0.4]}>
+                     <mesh position={[0, 0, 0]} scale={[0.8, 0.1, 1]}>
+                        <boxGeometry />
+                        <meshStandardMaterial color="#334155" />
+                     </mesh>
+                 </group>
+             )}
+             {/* Ramp W */}
+             {rampW && (
+                 <group position={[-0.75, ELEVATION_HEIGHT/2, 0]} rotation={[0, 0, 0.4]}>
+                     <mesh position={[0, 0, 0]} scale={[0.8, 0.1, 1]}>
+                        <boxGeometry />
+                        <meshStandardMaterial color="#334155" />
+                     </mesh>
+                 </group>
+             )}
+
+             {/* Railings */}
+             {/* Render simple railings on sides that don't connect */}
+             {!n && !rampN && <mesh position={[0, ELEVATION_HEIGHT + 0.15, -0.45]} scale={[1, 0.2, 0.1]}><boxGeometry /><meshStandardMaterial color="#cbd5e1" /></mesh>}
+             {!s && !rampS && <mesh position={[0, ELEVATION_HEIGHT + 0.15, 0.45]} scale={[1, 0.2, 0.1]}><boxGeometry /><meshStandardMaterial color="#cbd5e1" /></mesh>}
+             {!e && !rampE && <mesh position={[0.45, ELEVATION_HEIGHT + 0.15, 0]} scale={[0.1, 0.2, 1]}><boxGeometry /><meshStandardMaterial color="#cbd5e1" /></mesh>}
+             {!w && !rampW && <mesh position={[-0.45, ELEVATION_HEIGHT + 0.15, 0]} scale={[0.1, 0.2, 1]}><boxGeometry /><meshStandardMaterial color="#cbd5e1" /></mesh>}
+
+             {/* Pillars */}
+             {/* Only render pillars if NOT an overpass (would block road below) or if specifically placed at corners */}
+             {!isOverpass && (
+                 <>
+                    <mesh position={[0.4, ELEVATION_HEIGHT/2, 0.4]} scale={[0.1, ELEVATION_HEIGHT, 0.1]} castShadow>
+                        <cylinderGeometry />
+                        <meshStandardMaterial color="#64748b" />
+                    </mesh>
+                    <mesh position={[-0.4, ELEVATION_HEIGHT/2, 0.4]} scale={[0.1, ELEVATION_HEIGHT, 0.1]} castShadow>
+                        <cylinderGeometry />
+                        <meshStandardMaterial color="#64748b" />
+                    </mesh>
+                    <mesh position={[0.4, ELEVATION_HEIGHT/2, -0.4]} scale={[0.1, ELEVATION_HEIGHT, 0.1]} castShadow>
+                        <cylinderGeometry />
+                        <meshStandardMaterial color="#64748b" />
+                    </mesh>
+                    <mesh position={[-0.4, ELEVATION_HEIGHT/2, -0.4]} scale={[0.1, ELEVATION_HEIGHT, 0.1]} castShadow>
+                        <cylinderGeometry />
+                        <meshStandardMaterial color="#64748b" />
                     </mesh>
                  </>
              )}
              
-             {/* 3. Details: Manholes, Tire Marks, Oil Stains */}
-             {/* Manhole (random) */}
-             {hash > 0.8 && (
-                 <mesh rotation={[-Math.PI/2, 0, 0]} position={[0.2, 0.005, 0.2]} scale={[0.15, 0.15, 1]}>
-                     <circleGeometry />
-                     <meshStandardMaterial color="#4b5563" metalness={0.6} roughness={0.4} />
-                 </mesh>
-             )}
-             
-             {/* Tire Tracks (faint black lines) */}
-             {(n || s) && (
-                 <>
-                    <mesh rotation={[-Math.PI/2, 0, 0]} position={[-0.2, 0.005, 0]} scale={[0.02, 1, 1]}><planeGeometry /><meshBasicMaterial color="black" transparent opacity={0.1} /></mesh>
-                    <mesh rotation={[-Math.PI/2, 0, 0]} position={[0.2, 0.005, 0]} scale={[0.02, 1, 1]}><planeGeometry /><meshBasicMaterial color="black" transparent opacity={0.1} /></mesh>
-                 </>
-             )}
-              {(e || w) && (
-                 <>
-                    <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, -0.2]} scale={[1, 0.02, 1]}><planeGeometry /><meshBasicMaterial color="black" transparent opacity={0.1} /></mesh>
-                    <mesh rotation={[-Math.PI/2, 0, 0]} position={[0, 0.005, 0.2]} scale={[1, 0.02, 1]}><planeGeometry /><meshBasicMaterial color="black" transparent opacity={0.1} /></mesh>
-                 </>
-             )}
-
-             {/* Oil Stain */}
-             {hash < 0.2 && (
-                 <mesh rotation={[-Math.PI/2, 0, 0]} position={[(hash-0.1), 0.006, -(hash-0.1)]} scale={[0.2, 0.2, 1]}>
-                     <circleGeometry />
-                     <meshBasicMaterial color="#000" transparent opacity={0.3} />
-                 </mesh>
+             {/* Center Pillar for standard bridge if no road below */}
+             {!isOverpass && !rampN && !rampS && !rampE && !rampW && (
+                  <mesh position={[0, ELEVATION_HEIGHT/2, 0]} scale={[0.3, ELEVATION_HEIGHT, 0.3]} castShadow>
+                        <cylinderGeometry />
+                        <meshStandardMaterial color="#64748b" />
+                  </mesh>
              )}
 
         </group>
     );
+}
+
+const RoadSystem = React.memo(({ x, y, grid }: { x: number, y: number, grid: Grid }) => {
+    const tile = grid[y][x];
+    const v = tile.variant || 0;
+    
+    // Variant 0: Ground Only
+    // Variant 1: Bridge Only
+    // Variant 2: Overpass (Ground NS, Bridge EW) - App.tsx calls this "Overpass NS" but visually let's interpret
+    // Variant 3: Overpass (Ground EW, Bridge NS)
+
+    // Interpretation:
+    // 0: Ground
+    // 1: Bridge (Auto-connect)
+    // 2: Ground Vertical, Bridge Horizontal
+    // 3: Ground Horizontal, Bridge Vertical
+    
+    const isGround = v === 0 || v === 2 || v === 3;
+    const isBridge = v === 1 || v === 2 || v === 3;
+    const isOverpass = v === 2 || v === 3;
+
+    // For Overpasses, we force the ground direction
+    const overrideVertical = v === 2; // Ground goes N-S
+    const overrideHorizontal = v === 3; // Ground goes E-W
+
+    return (
+        <group>
+            {isGround && <GroundRoadSegment x={x} y={y} grid={grid} overrideVertical={overrideVertical} overrideHorizontal={overrideHorizontal} />}
+            {isBridge && <BridgeRoadSegment x={x} y={y} grid={grid} isOverpass={isOverpass} />}
+        </group>
+    );
 });
+
 
 // --- 3. Weather & Environment ---
 
@@ -735,7 +833,7 @@ const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, populat
                 {/* Building or Road */}
                 {tile.buildingType !== BuildingType.None && (
                    tile.buildingType === BuildingType.Road ? (
-                       <RoadMarkings x={x} y={y} grid={grid} />
+                       <RoadSystem x={x} y={y} grid={grid} />
                    ) : (
                        <ProceduralBuilding 
                           type={tile.buildingType} 
