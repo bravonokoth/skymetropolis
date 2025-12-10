@@ -1217,29 +1217,134 @@ const WeatherSystem = ({ weather }: { weather: WeatherType }) => {
 };
 
 const EnvironmentEffects = ({ weather }: { weather: WeatherType }) => {
-    // Warm, sunny environment settings for Kanairo
+    const { scene } = useThree();
+    const dirLightRef = useRef<THREE.DirectionalLight>(null);
+    const ambLightRef = useRef<THREE.AmbientLight>(null);
+    const fogRef = useRef<THREE.Fog>(null);
+
+    // Day cycle: 60 seconds
+    const CYCLE_DURATION = 60;
+
+    useFrame((state) => {
+        const time = state.clock.elapsedTime;
+        const cyclePos = (time % CYCLE_DURATION) / CYCLE_DURATION; // 0 to 1
+        
+        // Define colors
+        const cSunrise = new THREE.Color("#fb923c"); // Orange-400
+        const cDay = new THREE.Color("#bae6fd");     // Sky-200
+        const cSunset = new THREE.Color("#be185d");  // Pink-700
+        const cNight = new THREE.Color("#0f172a");   // Slate-900
+        const cRain = new THREE.Color("#374151");    // Gray-700
+        const cSnow = new THREE.Color("#cbd5e1");    // Slate-300
+
+        let skyColor = cDay.clone();
+        let lightColor = new THREE.Color("#fff7ed"); // Warm white
+        let lightIntensity = 1.8;
+        let ambientIntensity = 0.7;
+        let fogNear = 30;
+        let fogFar = 100;
+        let sunPos = new THREE.Vector3(10, 20, 10);
+
+        if (weather === 'rainy') {
+            skyColor = cRain;
+            lightColor = new THREE.Color("#94a3b8");
+            lightIntensity = 0.5;
+            ambientIntensity = 0.3;
+            fogNear = 10;
+            fogFar = 60;
+            // Dim slightly at night even if rainy
+            if (cyclePos > 0.5) {
+                 ambientIntensity = 0.15;
+                 lightIntensity = 0.1;
+            }
+        } else if (weather === 'snowy') {
+             // ... snowy logic ...
+             if (cyclePos > 0.5) {
+                 skyColor = cNight;
+                 ambientIntensity = 0.2;
+                 lightIntensity = 0.2;
+             } else {
+                 skyColor = cSnow;
+                 ambientIntensity = 0.8;
+                 lightIntensity = 1.0;
+             }
+        } else {
+             // Sunny Cycle
+             // 0.0 - 0.1: Sunrise
+             // 0.1 - 0.4: Day
+             // 0.4 - 0.5: Sunset
+             // 0.5 - 1.0: Night
+             
+             if (cyclePos < 0.1) { // Sunrise
+                 const t = cyclePos / 0.1;
+                 skyColor.lerpColors(cNight, cSunrise, t);
+                 lightIntensity = t * 1.5;
+                 ambientIntensity = 0.2 + t * 0.5;
+                 lightColor.set("#fbbf24");
+                 sunPos.set(20, t * 15, 10);
+             } else if (cyclePos < 0.4) { // Day
+                 // Transition from sunrise to full day in first bit
+                 if (cyclePos < 0.15) {
+                    const t = (cyclePos - 0.1) / 0.05;
+                    skyColor.lerpColors(cSunrise, cDay, t);
+                    lightColor.lerpColors(new THREE.Color("#fbbf24"), new THREE.Color("#fff7ed"), t);
+                 } else {
+                    skyColor = cDay;
+                    lightColor.set("#fff7ed");
+                 }
+                 lightIntensity = 1.8;
+                 ambientIntensity = 0.75;
+                 // Sun moves high
+                 const t = (cyclePos - 0.1) / 0.3;
+                 sunPos.set(20 - t*30, 20, 10);
+             } else if (cyclePos < 0.5) { // Sunset
+                 const t = (cyclePos - 0.4) / 0.1;
+                 skyColor.lerpColors(cDay, cSunset, t);
+                 lightIntensity = 1.8 * (1 - t);
+                 ambientIntensity = 0.75 - t * 0.55;
+                 lightColor.lerpColors(new THREE.Color("#fff7ed"), new THREE.Color("#f43f5e"), t);
+                 sunPos.set(-10 - t*10, 20 - t*15, 10);
+             } else { // Night
+                 skyColor = cNight;
+                 lightIntensity = 0.2; // Moonlight
+                 ambientIntensity = 0.2;
+                 lightColor.set("#334155"); // Cool blueish moon
+                 sunPos.set(-10, 10, 0); // Moon position
+             }
+        }
+
+        // Apply
+        scene.background = skyColor;
+        if (ambLightRef.current) ambLightRef.current.intensity = MathUtils.lerp(ambLightRef.current.intensity, ambientIntensity, 0.05);
+        if (dirLightRef.current) {
+             dirLightRef.current.intensity = MathUtils.lerp(dirLightRef.current.intensity, lightIntensity, 0.05);
+             dirLightRef.current.color.lerp(lightColor, 0.05);
+             dirLightRef.current.position.lerp(sunPos, 0.05);
+        }
+        if (fogRef.current) {
+            fogRef.current.color.lerp(skyColor, 0.05);
+            fogRef.current.near = MathUtils.lerp(fogRef.current.near, fogNear, 0.05);
+            fogRef.current.far = MathUtils.lerp(fogRef.current.far, fogFar, 0.05);
+        }
+    });
+
     return (
         <>
-            <ambientLight intensity={weather === 'rainy' ? 0.3 : weather === 'snowy' ? 0.8 : 0.7} />
+            <ambientLight ref={ambLightRef} intensity={0.5} />
             <directionalLight 
+                ref={dirLightRef}
                 position={[10, 20, 10]} 
-                intensity={weather === 'sunny' ? 1.8 : 0.6} 
+                intensity={1.5} 
                 castShadow 
-                color={weather === 'sunny' ? "#fff7ed" : "#ffffff"} 
-                shadow-mapSize={[1024, 1024]} 
+                shadow-mapSize={[2048, 2048]}
+                shadow-bias={-0.0005}
             >
-                <orthographicCamera attach="shadow-camera" args={[-20, 20, 20, -20]} />
+                <orthographicCamera attach="shadow-camera" args={[-40, 40, 40, -40]} />
             </directionalLight>
-            
-            {/* Fog for atmosphere - Warm haze if sunny */}
-            <fog attach="fog" args={[
-                weather === 'rainy' ? '#1e293b' : weather === 'snowy' ? '#e2e8f0' : '#fed7aa', // Orange-200 haze for Sunny
-                5, // Near
-                weather === 'sunny' ? 60 : 30 // Far
-            ]} />
+            <fog ref={fogRef} attach="fog" args={['#bae6fd', 20, 100]} />
         </>
     );
-}
+};
 
 // --- 4. Main Scene ---
 
@@ -1256,12 +1361,9 @@ interface IsoMapProps {
 const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, population, weather, happiness, congestion }) => {
   const [hoveredTile, setHoveredTile] = useState<{x: number, y: number} | null>(null);
 
-  // Background color based on weather - Savannah Sky
-  const bgColor = weather === 'sunny' ? '#bae6fd' : weather === 'rainy' ? '#0f172a' : '#cbd5e1';
-
   return (
     <Canvas shadows dpr={[1, 2]} className="w-full h-full">
-      <color attach="background" args={[bgColor]} />
+      {/* Dynamic Background handled by EnvironmentEffects */}
       
       <EnvironmentEffects weather={weather} />
       <WeatherSystem weather={weather} />
