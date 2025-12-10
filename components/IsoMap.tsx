@@ -140,19 +140,95 @@ const SirenLight = ({ position }: { position: [number, number, number] }) => {
   );
 };
 
+const ConstructionScaffold = () => {
+  const craneRef = useRef<THREE.Group>(null);
+  
+  useFrame((state) => {
+    if (craneRef.current) {
+      // Gentle swaying of the crane
+      craneRef.current.rotation.y = Math.sin(state.clock.elapsedTime * 0.5) * 0.5 + 0.5;
+    }
+  });
+
+  return (
+    <group>
+      {/* Wireframe Box indicating construction zone */}
+      <mesh position={[0, 0.6, 0]} scale={[1.1, 1.2, 1.1]}>
+        <boxGeometry />
+        <meshBasicMaterial color="#facc15" wireframe />
+      </mesh>
+      
+      {/* Corner Posts */}
+      <mesh position={[0.55, 0.6, 0.55]} scale={[0.05, 1.2, 0.05]} geometry={boxGeo}>
+         <meshStandardMaterial color="#fbbf24" />
+      </mesh>
+      <mesh position={[-0.55, 0.6, 0.55]} scale={[0.05, 1.2, 0.05]} geometry={boxGeo}>
+         <meshStandardMaterial color="#fbbf24" />
+      </mesh>
+      <mesh position={[0.55, 0.6, -0.55]} scale={[0.05, 1.2, 0.05]} geometry={boxGeo}>
+         <meshStandardMaterial color="#fbbf24" />
+      </mesh>
+      <mesh position={[-0.55, 0.6, -0.55]} scale={[0.05, 1.2, 0.05]} geometry={boxGeo}>
+         <meshStandardMaterial color="#fbbf24" />
+      </mesh>
+
+      {/* Crane */}
+      <group ref={craneRef} position={[0.6, 0, 0.6]}>
+        {/* Mast */}
+        <mesh position={[0, 1.25, 0]} scale={[0.05, 2.5, 0.05]} castShadow geometry={boxGeo}>
+          <meshStandardMaterial color="#f59e0b" />
+        </mesh>
+        {/* Jib (Arm) */}
+        <mesh position={[-0.4, 2.4, 0]} scale={[0.8, 0.05, 0.05]} castShadow geometry={boxGeo}>
+           <meshStandardMaterial color="#f59e0b" />
+        </mesh>
+        {/* Counter Jib */}
+        <mesh position={[0.2, 2.4, 0]} scale={[0.4, 0.05, 0.05]} geometry={boxGeo}>
+           <meshStandardMaterial color="#f59e0b" />
+        </mesh>
+        {/* Counterweight */}
+        <mesh position={[0.3, 2.35, 0]} scale={[0.15, 0.1, 0.1]} geometry={boxGeo}>
+            <meshStandardMaterial color="#78350f" />
+        </mesh>
+        {/* Cable */}
+        <mesh position={[-0.7, 2.1, 0]} scale={[0.01, 0.6, 0.01]} geometry={boxGeo}>
+            <meshBasicMaterial color="black" />
+        </mesh>
+        {/* Hook/Load */}
+        <mesh position={[-0.7, 1.8, 0]} scale={[0.1, 0.1, 0.1]} geometry={boxGeo}>
+             <meshStandardMaterial color="#ef4444" />
+        </mesh>
+      </group>
+    </group>
+  );
+};
+
 const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { type: BuildingType, variant: number, x: number, y: number, happiness: number }) => {
   const buildingRef = useRef<THREE.Group>(null);
   const hash = getHash(x, y);
+
+  // Construction State
+  const [isBuilt, setIsBuilt] = useState(false);
+  const progress = useRef(0);
 
   // Slum or Luxury Appearance based on happiness
   const isSlum = happiness < 40;
   const isLuxury = happiness > 80;
 
-  // Animation for placement
-  useFrame((state) => {
-    if (buildingRef.current && buildingRef.current.scale.y < 1) {
-      buildingRef.current.scale.y += 0.05;
-      if (buildingRef.current.scale.y > 1) buildingRef.current.scale.y = 1;
+  // Animation for construction and placement
+  useFrame((state, delta) => {
+    if (!isBuilt) {
+      // Build over ~1.5 seconds
+      progress.current += delta * 0.7;
+      if (progress.current >= 1) {
+        progress.current = 1;
+        setIsBuilt(true);
+      }
+
+      if (buildingRef.current) {
+        // Grow from ground
+        buildingRef.current.scale.y = progress.current;
+      }
     }
   });
 
@@ -464,8 +540,11 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
   }, [type, hash, isSlum, isLuxury]);
 
   return (
-    <group ref={buildingRef} position={[0, 0, 0]} scale={[1, 0, 1]}>
-      {content}
+    <group>
+      <group ref={buildingRef} position={[0, 0, 0]} scale={[1, 0, 1]}>
+        {content}
+      </group>
+      {!isBuilt && <ConstructionScaffold />}
     </group>
   );
 });
