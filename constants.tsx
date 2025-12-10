@@ -9,7 +9,7 @@ export const GRID_SIZE = 15;
 
 // Game Settings
 export const TICK_RATE_MS = 2000; // Game loop updates every 2 seconds
-export const INITIAL_MONEY = 1500; // Increased starting money for new infrastructure
+export const INITIAL_MONEY = 2500; // Increased starting money for new infrastructure
 
 export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
   [BuildingType.None]: {
@@ -24,6 +24,11 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     waterUsage: 0,
     powerGen: 0,
     waterGen: 0,
+    educationGen: 0,
+    healthcareGen: 0,
+    goodsGen: 0,
+    goodsUsage: 0,
+    safetyGen: 0,
   },
   [BuildingType.Road]: {
     type: BuildingType.Road,
@@ -37,6 +42,11 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     waterUsage: 0,
     powerGen: 0,
     waterGen: 0,
+    educationGen: 0,
+    healthcareGen: 0,
+    goodsGen: 0,
+    goodsUsage: 0,
+    safetyGen: 0,
   },
   [BuildingType.Residential]: {
     type: BuildingType.Residential,
@@ -50,6 +60,11 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     waterUsage: 1,
     powerGen: 0,
     waterGen: 0,
+    educationGen: 0,
+    healthcareGen: 0,
+    goodsGen: 0,
+    goodsUsage: 0,
+    safetyGen: 0,
   },
   [BuildingType.MixedUse]: {
     type: BuildingType.MixedUse,
@@ -63,6 +78,11 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     waterUsage: 2,
     powerGen: 0,
     waterGen: 0,
+    educationGen: 0,
+    healthcareGen: 0,
+    goodsGen: 0,
+    goodsUsage: 2, // Consumes goods
+    safetyGen: 0,
   },
   [BuildingType.Commercial]: {
     type: BuildingType.Commercial,
@@ -76,6 +96,11 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     waterUsage: 1,
     powerGen: 0,
     waterGen: 0,
+    educationGen: 0,
+    healthcareGen: 0,
+    goodsGen: 0,
+    goodsUsage: 3, // Needs goods to sell
+    safetyGen: 0,
   },
   [BuildingType.Industrial]: {
     type: BuildingType.Industrial,
@@ -89,6 +114,11 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     waterUsage: 3,
     powerGen: 0,
     waterGen: 0,
+    educationGen: 0,
+    healthcareGen: 0,
+    goodsGen: 10, // Produces goods
+    goodsUsage: 0,
+    safetyGen: 0,
   },
   [BuildingType.Park]: {
     type: BuildingType.Park,
@@ -102,6 +132,11 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     waterUsage: 1,
     powerGen: 0,
     waterGen: 0,
+    educationGen: 0,
+    healthcareGen: 0,
+    goodsGen: 0,
+    goodsUsage: 0,
+    safetyGen: 0,
   },
   [BuildingType.PowerPlant]: {
     type: BuildingType.PowerPlant,
@@ -115,6 +150,11 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     waterUsage: 0,
     powerGen: 50,
     waterGen: 0,
+    educationGen: 0,
+    healthcareGen: 0,
+    goodsGen: 0,
+    goodsUsage: 0,
+    safetyGen: 0,
   },
   [BuildingType.WaterPump]: {
     type: BuildingType.WaterPump,
@@ -128,5 +168,64 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     waterUsage: 0,
     powerGen: 0,
     waterGen: 50,
+    educationGen: 0,
+    healthcareGen: 0,
+    goodsGen: 0,
+    goodsUsage: 0,
+    safetyGen: 0,
+  },
+  [BuildingType.School]: {
+    type: BuildingType.School,
+    cost: 600,
+    name: 'School',
+    description: 'Education Service',
+    color: '#fcd34d', // amber-300
+    popGen: 0,
+    incomeGen: 0,
+    powerUsage: 3,
+    waterUsage: 2,
+    powerGen: 0,
+    waterGen: 0,
+    educationGen: 100, // Serves 100 people
+    healthcareGen: 0,
+    goodsGen: 0,
+    goodsUsage: 1, // Supplies
+    safetyGen: 0,
+  },
+  [BuildingType.Hospital]: {
+    type: BuildingType.Hospital,
+    cost: 800,
+    name: 'Hospital',
+    description: 'Healthcare Service',
+    color: '#fecaca', // red-200 (white/red mix)
+    popGen: 0,
+    incomeGen: 0,
+    powerUsage: 5,
+    waterUsage: 3,
+    powerGen: 0,
+    waterGen: 0,
+    educationGen: 0,
+    healthcareGen: 150, // Serves 150 people
+    goodsGen: 0,
+    goodsUsage: 2, // Medical supplies
+    safetyGen: 0,
+  },
+  [BuildingType.PoliceStation]: {
+    type: BuildingType.PoliceStation,
+    cost: 700,
+    name: 'Police Station',
+    description: 'Safety & Security',
+    color: '#3b82f6', // blue-500
+    popGen: 0,
+    incomeGen: 0,
+    powerUsage: 3,
+    waterUsage: 1,
+    powerGen: 0,
+    waterGen: 0,
+    educationGen: 0,
+    healthcareGen: 0,
+    goodsGen: 0,
+    goodsUsage: 1,
+    safetyGen: 200, // Protects 200 people
   },
 };

@@ -12,6 +12,9 @@ export enum BuildingType {
   PowerPlant = 'PowerPlant',
   WaterPump = 'WaterPump',
   MixedUse = 'MixedUse',
+  School = 'School',
+  Hospital = 'Hospital',
+  PoliceStation = 'PoliceStation',
 }
 
 export interface BuildingConfig {
@@ -26,6 +29,11 @@ export interface BuildingConfig {
   waterUsage: number;
   powerGen: number;
   waterGen: number;
+  educationGen: number; // Student capacity
+  healthcareGen: number; // Patient capacity
+  goodsGen: number; // Goods Produced
+  goodsUsage: number; // Goods Consumed
+  safetyGen: number; // Safety/Crime Prevention provided
 }
 
 export interface TileData {
@@ -51,6 +59,11 @@ export interface CityStats {
   powerDemand: number;
   waterSupply: number;
   waterDemand: number;
+  educationCoverage: number; // 0-100%
+  healthcareCoverage: number; // 0-100%
+  goodsSupply: number;
+  goodsDemand: number;
+  safetyCoverage: number; // 0-100%
 }
 
 export interface AIGoal {

@@ -1,4 +1,3 @@
-
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -28,6 +27,9 @@ const tools = [
   BuildingType.Industrial,
   BuildingType.PowerPlant,
   BuildingType.WaterPump,
+  BuildingType.School,
+  BuildingType.Hospital,
+  BuildingType.PoliceStation,
   BuildingType.Park,
 ];
 
@@ -133,9 +135,16 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
   // Utility calculations for UI
   const pRatio = stats.powerDemand > 0 ? stats.powerSupply / stats.powerDemand : 1;
   const wRatio = stats.waterDemand > 0 ? stats.waterSupply / stats.waterDemand : 1;
+  const gRatio = stats.goodsDemand > 0 ? stats.goodsSupply / stats.goodsDemand : 1;
   
   const powerColor = pRatio >= 1 ? 'text-yellow-400' : 'text-red-500 animate-pulse';
   const waterColor = wRatio >= 1 ? 'text-blue-400' : 'text-red-500 animate-pulse';
+  const goodsColor = gRatio >= 1 ? 'text-orange-300' : 'text-red-500 animate-pulse';
+
+  // Service colors
+  const eduColor = stats.educationCoverage >= 100 ? 'text-green-400' : stats.educationCoverage > 50 ? 'text-yellow-400' : 'text-red-500';
+  const healthColor = stats.healthcareCoverage >= 100 ? 'text-green-400' : stats.healthcareCoverage > 50 ? 'text-yellow-400' : 'text-red-500';
+  const safetyColor = stats.safetyCoverage >= 100 ? 'text-green-400' : stats.safetyCoverage > 50 ? 'text-yellow-400' : 'text-red-500';
 
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-2 md:p-4 font-sans z-10">
@@ -164,19 +173,38 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
           
           <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
 
-           {/* Utility Stats */}
-           <div className="flex flex-col">
-            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Power</span>
-            <span className={`text-base md:text-lg font-bold font-mono drop-shadow-md flex items-center gap-1 ${powerColor}`}>
-              ⚡ {Math.floor(stats.powerSupply)}/{stats.powerDemand}
-            </span>
+           {/* Utility & Goods Stats */}
+           <div className="flex flex-col items-center">
+            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Res</span>
+            <div className="flex gap-2">
+                <span className={`text-base font-bold font-mono drop-shadow-md flex items-center ${powerColor}`} title={`Power: ${Math.floor(stats.powerSupply)}/${stats.powerDemand}`}>
+                  ⚡
+                </span>
+                <span className={`text-base font-bold font-mono drop-shadow-md flex items-center ${waterColor}`} title={`Water: ${Math.floor(stats.waterSupply)}/${stats.waterDemand}`}>
+                  💧
+                </span>
+                <span className={`text-base font-bold font-mono drop-shadow-md flex items-center ${goodsColor}`} title={`Goods: ${stats.goodsSupply}/${stats.goodsDemand}`}>
+                  📦
+                </span>
+            </div>
           </div>
+          
           <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
-          <div className="flex flex-col">
-            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Water</span>
-            <span className={`text-base md:text-lg font-bold font-mono drop-shadow-md flex items-center gap-1 ${waterColor}`}>
-              💧 {Math.floor(stats.waterSupply)}/{stats.waterDemand}
-            </span>
+
+          {/* Service Stats */}
+          <div className="flex flex-col items-center">
+            <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Svcs</span>
+            <div className="flex gap-2">
+                 <span className={`text-base font-bold font-mono drop-shadow-md flex items-center ${eduColor}`} title={`Education: ${stats.educationCoverage}%`}>
+                  🎓
+                </span>
+                <span className={`text-base font-bold font-mono drop-shadow-md flex items-center ${healthColor}`} title={`Healthcare: ${stats.healthcareCoverage}%`}>
+                  🏥
+                </span>
+                 <span className={`text-base font-bold font-mono drop-shadow-md flex items-center ${safetyColor}`} title={`Safety: ${stats.safetyCoverage}%`}>
+                  🛡️
+                </span>
+            </div>
           </div>
 
           <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
@@ -311,21 +339,26 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                             <span className="text-blue-400 font-mono font-bold text-sm">+{config.popGen}/day</span>
                         </div>
                     )}
-                    {(config.powerGen > 0 || config.waterGen > 0) && (
+                    {(config.powerGen > 0 || config.waterGen > 0 || config.educationGen > 0 || config.healthcareGen > 0 || config.goodsGen > 0 || config.safetyGen > 0) && (
                          <div className="flex justify-between items-center border-t border-gray-800 pt-1">
                             <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Output</span>
                             <span className="text-yellow-400 font-mono font-bold text-sm">
-                                {config.powerGen > 0 ? `+${config.powerGen} ⚡` : ''}
-                                {config.waterGen > 0 ? `+${config.waterGen} 💧` : ''}
+                                {config.powerGen > 0 ? `+${config.powerGen} ⚡ ` : ''}
+                                {config.waterGen > 0 ? `+${config.waterGen} 💧 ` : ''}
+                                {config.educationGen > 0 ? `+${config.educationGen} 🎓 ` : ''}
+                                {config.healthcareGen > 0 ? `+${config.healthcareGen} 🏥 ` : ''}
+                                {config.goodsGen > 0 ? `+${config.goodsGen} 📦 ` : ''}
+                                {config.safetyGen > 0 ? `+${config.safetyGen} 🛡️ ` : ''}
                             </span>
                         </div>
                     )}
-                    {(config.powerUsage > 0 || config.waterUsage > 0) && (
+                    {(config.powerUsage > 0 || config.waterUsage > 0 || config.goodsUsage > 0) && (
                          <div className="flex justify-between items-center border-t border-gray-800 pt-1">
                             <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Needs</span>
                             <span className="text-orange-400 font-mono font-bold text-sm">
-                                {config.powerUsage > 0 ? `-${config.powerUsage} ⚡` : ''}
-                                {config.waterUsage > 0 ? ` -${config.waterUsage} 💧` : ''}
+                                {config.powerUsage > 0 ? `-${config.powerUsage} ⚡ ` : ''}
+                                {config.waterUsage > 0 ? `-${config.waterUsage} 💧 ` : ''}
+                                {config.goodsUsage > 0 ? `-${config.goodsUsage} 📦 ` : ''}
                             </span>
                         </div>
                     )}

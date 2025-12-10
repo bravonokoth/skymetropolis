@@ -46,6 +46,11 @@ function App() {
     powerDemand: 0,
     waterSupply: 0,
     waterDemand: 0,
+    educationCoverage: 100,
+    healthcareCoverage: 100,
+    goodsSupply: 0,
+    goodsDemand: 0,
+    safetyCoverage: 100,
   });
   const [selectedTool, setSelectedTool] = useState<BuildingType>(BuildingType.Road);
   
@@ -132,6 +137,11 @@ function App() {
           powerDemand: gameState.stats.powerDemand ?? 0,
           waterSupply: gameState.stats.waterSupply ?? 0,
           waterDemand: gameState.stats.waterDemand ?? 0,
+          educationCoverage: gameState.stats.educationCoverage ?? 100,
+          healthcareCoverage: gameState.stats.healthcareCoverage ?? 100,
+          goodsSupply: gameState.stats.goodsSupply ?? 0,
+          goodsDemand: gameState.stats.goodsDemand ?? 0,
+          safetyCoverage: gameState.stats.safetyCoverage ?? 100,
         });
         setCurrentGoal(gameState.currentGoal);
         setNewsFeed(gameState.newsFeed);
@@ -176,6 +186,13 @@ function App() {
       let wSupply = 0;
       let pDemand = 0;
       let wDemand = 0;
+      
+      let eduCapacity = 0;
+      let healthCapacity = 0;
+      let safetyCapacity = 0;
+      
+      let gSupply = 0;
+      let gDemand = 0;
 
       // Pass 1: Aggregate Supply/Demand
       gridRef.current.flat().forEach(tile => {
@@ -185,6 +202,14 @@ function App() {
           wSupply += config.waterGen;
           pDemand += config.powerUsage;
           wDemand += config.waterUsage;
+          
+          eduCapacity += config.educationGen;
+          healthCapacity += config.healthcareGen;
+          safetyCapacity += config.safetyGen;
+
+          gSupply += config.goodsGen;
+          gDemand += config.goodsUsage;
+          
           buildingCounts[tile.buildingType] = (buildingCounts[tile.buildingType] || 0) + 1;
         }
       });
@@ -192,15 +217,24 @@ function App() {
       // Calculate Efficiency (0.0 - 1.0)
       const powerEfficiency = pDemand > 0 ? Math.min(1, pSupply / pDemand) : 1;
       const waterEfficiency = wDemand > 0 ? Math.min(1, wSupply / wDemand) : 1;
-      const utilityEfficiency = (powerEfficiency + waterEfficiency) / 2;
+      const goodsEfficiency = gDemand > 0 ? Math.min(1, gSupply / gDemand) : 1;
+      
+      const basicUtilEfficiency = (powerEfficiency + waterEfficiency) / 2;
 
       // Pass 2: Calculate Output based on Efficiency
       gridRef.current.flat().forEach(tile => {
          if (tile.buildingType !== BuildingType.None) {
           const config = BUILDINGS[tile.buildingType];
-          // Income and Pop growth are stifled if utilities are missing
-          dailyIncome += config.incomeGen * utilityEfficiency;
-          dailyPopGrowth += config.popGen * utilityEfficiency;
+          // Income requires Utils AND Goods (for commercial)
+          let tileIncome = config.incomeGen * basicUtilEfficiency;
+          
+          // Commercial/MixedUse suffer if goods are low
+          if (config.goodsUsage > 0) {
+             tileIncome *= goodsEfficiency;
+          }
+          
+          dailyIncome += tileIncome;
+          dailyPopGrowth += config.popGen * basicUtilEfficiency;
          }
       });
 
@@ -214,21 +248,34 @@ function App() {
         let newPop = prev.population + dailyPopGrowth;
         if (newPop > totalHousing) newPop = totalHousing; 
         if (totalHousing === 0 && prev.population > 0) newPop = Math.max(0, prev.population - 5);
+        newPop = Math.floor(newPop);
 
         // -- Pollution --
         const indCount = buildingCounts[BuildingType.Industrial] || 0;
         const powerCount = buildingCounts[BuildingType.PowerPlant] || 0;
         const parkCount = buildingCounts[BuildingType.Park] || 0;
         
-        // Factories & Power Plants pollute
         let currentPollution = (indCount * 10) + (powerCount * 5) - (parkCount * 5);
         currentPollution = Math.max(0, Math.min(100, currentPollution));
 
+        // -- Services (Education & Healthcare & Safety) Coverage --
+        // Base coverage is 100 if pop is 0
+        let eduCov = 100;
+        let healthCov = 100;
+        let safetyCov = 100;
+
+        if (newPop > 0) {
+            eduCov = Math.min(100, (eduCapacity / newPop) * 100);
+            healthCov = Math.min(100, (healthCapacity / newPop) * 100);
+            safetyCov = Math.min(100, (safetyCapacity / newPop) * 100);
+        }
+
         // -- Happiness --
-        let newHappiness = 60; 
+        let newHappiness = 60; // Base
         
-        newHappiness += Math.min(parkCount * 5, 30);
-        newHappiness -= Math.floor(currentPollution * 0.8);
+        // Modifiers
+        newHappiness += Math.min(parkCount * 5, 30); // Parks up to +30
+        newHappiness -= Math.floor(currentPollution * 0.8); // Pollution penalty
         
         if (totalHousing > 0 && newPop > totalHousing * 0.9) newHappiness -= 15; // Overcrowding
         if (totalHousing === 0 && newPop > 0) newHappiness = 10; // Homelessness
@@ -236,6 +283,20 @@ function App() {
         // Utility Penalties
         if (powerEfficiency < 1) newHappiness -= 20 * (1 - powerEfficiency);
         if (waterEfficiency < 1) newHappiness -= 20 * (1 - waterEfficiency);
+        
+        // Service Satisfaction Penalties/Bonuses
+        if (eduCov < 50) newHappiness -= 15 * (1 - eduCov/50);
+        else if (eduCov > 80) newHappiness += 5;
+        
+        if (healthCov < 50) newHappiness -= 20 * (1 - healthCov/50); // Health is critical
+        else if (healthCov > 80) newHappiness += 5;
+
+        // Safety impact
+        if (safetyCov < 50) newHappiness -= 15 * (1 - safetyCov/50); // Crime rampant
+        else if (safetyCov > 90) newHappiness += 5;
+
+        // Supply chain happiness (indirectly via income, but also consumer satisfaction)
+        if (goodsEfficiency < 0.5) newHappiness -= 5; // Shortages
 
         // Wealth bonus
         if (prev.money > 2000) newHappiness += 5;
@@ -258,7 +319,7 @@ function App() {
 
         const newStats = {
           money: prev.money + dailyIncome,
-          population: Math.floor(newPop),
+          population: newPop,
           day: prev.day + 1,
           happiness: newHappiness,
           pollution: currentPollution,
@@ -266,7 +327,12 @@ function App() {
           powerSupply: pSupply,
           powerDemand: pDemand,
           waterSupply: wSupply,
-          waterDemand: wDemand
+          waterDemand: wDemand,
+          educationCoverage: Math.floor(eduCov),
+          healthcareCoverage: Math.floor(healthCov),
+          goodsSupply: gSupply,
+          goodsDemand: gDemand,
+          safetyCoverage: Math.floor(safetyCov),
         };
         
         // 3. Check Goal Completion
