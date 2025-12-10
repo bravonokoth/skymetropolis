@@ -87,7 +87,13 @@ export const generateCityGoal = async (stats: CityStats, grid: Grid): Promise<AI
 
     // @google/genai-response-text-fix: Access the `text` property directly from the response.
     if (response.text) {
-      const goalData = JSON.parse(response.text) as Omit<AIGoal, 'completed'>;
+      let text = response.text;
+      // Basic markdown cleanup in case the model adds code blocks despite the mimeType
+      if (text.startsWith('```')) {
+        text = text.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+      
+      const goalData = JSON.parse(text) as Omit<AIGoal, 'completed'>;
       return { ...goalData, completed: false };
     }
   } catch (error) {
@@ -128,7 +134,13 @@ export const generateNewsEvent = async (stats: CityStats, recentAction: string |
 
     // @google/genai-response-text-fix: Access the `text` property directly from the response.
     if (response.text) {
-      const data = JSON.parse(response.text);
+      let text = response.text;
+      // Basic markdown cleanup
+      if (text.startsWith('```')) {
+        text = text.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+
+      const data = JSON.parse(text);
       return {
         id: Date.now().toString() + Math.random(),
         text: data.text,

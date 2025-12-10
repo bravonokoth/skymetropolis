@@ -90,16 +90,16 @@ function App() {
   const fetchNewGoal = useCallback(async () => {
     if (isGeneratingGoal || !aiEnabledRef.current) return;
     setIsGeneratingGoal(true);
+    
     // Short delay for visual effect
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 1000));
     
     const newGoal = await generateCityGoal(statsRef.current, gridRef.current);
     if (newGoal) {
       setCurrentGoal(newGoal);
-    } else {
-      // Retry soon if failed, but only if AI still enabled
-      if(aiEnabledRef.current) setTimeout(fetchNewGoal, 5000);
     }
+    // If failed, currentGoal remains null, and the monitoring effect will retry later
+    
     setIsGeneratingGoal(false);
   }, [isGeneratingGoal]); 
 
@@ -109,7 +109,6 @@ function App() {
     const news = await generateNewsEvent(statsRef.current, null);
     if (news) addNewsItem(news);
   }, [addNewsItem]);
-
 
   // --- Persistence Logic ---
 
@@ -176,7 +175,6 @@ function App() {
     }
   }, [addNewsItem]);
 
-
   // --- Initial Setup ---
   useEffect(() => {
     if (!gameStarted) return;
@@ -184,13 +182,20 @@ function App() {
     if (newsFeed.length === 0) {
        addNewsItem({ id: Date.now().toString(), text: "Welcome to SkyMetropolis. Zoning approved.", type: 'positive' });
     }
-    
-    if (aiEnabled && !currentGoal) {
-      fetchNewGoal();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gameStarted]);
+    // Note: Goal fetching is now handled by the dedicated monitoring effect below
+  }, [gameStarted, newsFeed.length, addNewsItem]);
 
+  // --- AI Goal Monitoring ---
+  // Periodically check if we need a new goal
+  useEffect(() => {
+    if (gameStarted && aiEnabled && !currentGoal && !isGeneratingGoal) {
+      // Wait a moment before fetching to allow for transitions/animations
+      const timer = setTimeout(() => {
+        fetchNewGoal();
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameStarted, aiEnabled, currentGoal, isGeneratingGoal, fetchNewGoal]);
 
   // --- Game Loop ---
   useEffect(() => {
@@ -517,8 +522,8 @@ function App() {
     if (currentGoal && currentGoal.completed) {
       setStats(prev => ({ ...prev, money: prev.money + currentGoal.reward }));
       addNewsItem({id: Date.now().toString(), text: `Goal achieved! ${currentGoal.reward} deposited to treasury.`, type: 'positive'});
+      // Reset goal to null. The monitoring effect will pick this up and fetch a new goal automatically.
       setCurrentGoal(null);
-      fetchNewGoal();
     }
   };
 
