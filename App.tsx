@@ -9,6 +9,7 @@ import IsoMap from './components/IsoMap';
 import UIOverlay from './components/UIOverlay';
 import StartScreen from './components/StartScreen';
 import { generateCityGoal, generateNewsEvent } from './services/geminiService';
+import { SoundService } from './services/soundService';
 
 // Initialize empty grid with island shape generation for 3D visual interest
 const createInitialGrid = (): Grid => {
@@ -123,9 +124,11 @@ function App() {
     };
     try {
       localStorage.setItem('skymetropolis_save', JSON.stringify(gameState));
+      SoundService.playSave();
     } catch (e) {
       console.error("Failed to save game:", e);
       addNewsItem({ id: Date.now().toString(), text: "Save failed! Local storage might be full.", type: 'negative' });
+      SoundService.playError();
     }
   }, [newsFeed, addNewsItem]);
 
@@ -170,7 +173,7 @@ function App() {
         setNewsFeed(gameState.newsFeed);
         setAiEnabled(gameState.aiEnabled);
         
-        // Start game
+        SoundService.init();
         setGameStarted(true);
         addNewsItem({ id: Date.now().toString(), text: `Game loaded. Welcome back, Mayor!`, type: 'positive' });
       } catch (e) {
@@ -385,6 +388,7 @@ function App() {
                       type: 'negative'
                   });
                   disasterOccurred = true;
+                  SoundService.playDisaster();
               }
           }
       }
@@ -538,8 +542,10 @@ function App() {
             setGrid(newGrid);
             setStats(prev => ({ ...prev, money: prev.money - repairCost }));
             addNewsItem({id: Date.now().toString(), text: "Building repaired.", type: 'neutral'});
+            SoundService.playBuild();
         } else {
             addNewsItem({id: Date.now().toString(), text: "Insufficient funds for repairs.", type: 'negative'});
+            SoundService.playError();
         }
         return;
     }
@@ -553,8 +559,10 @@ function App() {
             newGrid[y][x] = { ...currentTile, buildingType: BuildingType.None, variant: 0, health: 100 };
             setGrid(newGrid);
             setStats(prev => ({ ...prev, money: prev.money - demolishCost }));
+            SoundService.playBulldoze();
         } else {
             addNewsItem({id: Date.now().toString(), text: "Cannot afford demolition costs.", type: 'negative'});
+            SoundService.playError();
         }
       }
       return;
@@ -576,8 +584,10 @@ function App() {
           setGrid(newGrid);
           setStats(prev => ({ ...prev, money: prev.money - upgradeCost }));
           addNewsItem({id: Date.now().toString(), text: `Upgraded to ${variantName}`, type: 'neutral'});
+          SoundService.playBuild();
        } else {
           addNewsItem({id: Date.now().toString(), text: "Insufficient funds for road upgrade.", type: 'negative'});
+          SoundService.playError();
        }
        return;
     }
@@ -592,9 +602,11 @@ function App() {
         const newGrid = currentGrid.map(row => [...row]);
         newGrid[y][x] = { ...currentTile, buildingType: tool, variant: 0, health: 100 };
         setGrid(newGrid);
+        SoundService.playBuild();
       } else {
         // Not enough money feedback
         addNewsItem({id: Date.now().toString() + Math.random(), text: `Treasury insufficient for ${buildingConfig.name}.`, type: 'negative'});
+        SoundService.playError();
       }
     }
   }, [selectedTool, addNewsItem, gameStarted]);
@@ -604,10 +616,12 @@ function App() {
       setStats(prev => ({ ...prev, money: prev.money + currentGoal.reward }));
       addNewsItem({id: Date.now().toString(), text: `Goal achieved! ${currentGoal.reward} deposited to treasury.`, type: 'positive'});
       setCurrentGoal(null);
+      SoundService.playMoney();
     }
   };
 
   const handleStart = (enabled: boolean) => {
+    SoundService.init();
     setAiEnabled(enabled);
     setGameStarted(true);
   };
