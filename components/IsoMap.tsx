@@ -678,6 +678,8 @@ const TrafficLight = ({ position, state }: { position: [number, number, number],
     );
 };
 
+type VehicleType = 'car' | 'truck' | 'bus' | 'police';
+
 // Simple Agent Logic
 interface CarAgent {
     id: number;
@@ -692,6 +694,7 @@ interface CarAgent {
     
     speed: number;
     color: string;
+    type: VehicleType;
     
     // Direction: 0=N, 1=E, 2=S, 3=W
     heading: number;
@@ -738,6 +741,26 @@ const TrafficSystem = ({ grid, congestion }: { grid: Grid, congestion: number })
              for (let i=0; i<toAdd; i++) {
                  const tile = roadTiles[Math.floor(Math.random() * roadTiles.length)];
                  const [wx, wy, wz] = gridToWorld(tile.x, tile.y);
+                 
+                 const typeRoll = Math.random();
+                 let vType: VehicleType = 'car';
+                 let color = carColors[Math.floor(Math.random() * carColors.length)];
+                 let speed = getRandomRange(0.02, 0.05);
+
+                 if (typeRoll > 0.96) {
+                     vType = 'police';
+                     color = '#ffffff'; 
+                     speed = 0.08; // Fast
+                 } else if (typeRoll > 0.85) {
+                     vType = 'bus';
+                     color = Math.random() > 0.5 ? '#f59e0b' : '#3b82f6'; // Amber or Blue
+                     speed = 0.02; // Slow
+                 } else if (typeRoll > 0.70) {
+                     vType = 'truck';
+                     color = '#78716c'; // Grey/Brown
+                     speed = 0.015; // Slow
+                 }
+
                  carsRef.current.push({
                      id: Math.random(),
                      x: tile.x,
@@ -746,8 +769,9 @@ const TrafficSystem = ({ grid, congestion }: { grid: Grid, congestion: number })
                      wy: wz,
                      tx: wx, // Start stationary-ish
                      ty: wz,
-                     speed: getRandomRange(0.02, 0.05),
-                     color: carColors[Math.floor(Math.random() * carColors.length)],
+                     speed: speed,
+                     color: color,
+                     type: vType,
                      heading: Math.floor(Math.random() * 4),
                      waiting: false
                  });
@@ -780,10 +804,6 @@ const TrafficSystem = ({ grid, congestion }: { grid: Grid, congestion: number })
             
             let shouldWait = false;
             
-            // Re-check grid logic for intersection
-            // This is heavy inside loop, ideally pre-calculated map
-            // We approximate: if dist < 0.1, we are arriving at center. Check next move.
-            
             if (dist < 0.05) {
                 // Arrived at target (center of a tile)
                 // Pick next tile
@@ -791,8 +811,6 @@ const TrafficSystem = ({ grid, congestion }: { grid: Grid, congestion: number })
                 car.wy = car.ty;
                 
                 // Current Tile Coords
-                // Map world back to grid? 
-                // Grid x = wx + offset
                 const gx = Math.round(car.wx + WORLD_OFFSET);
                 const gy = Math.round(car.wy + WORLD_OFFSET);
                 
@@ -810,7 +828,6 @@ const TrafficSystem = ({ grid, congestion }: { grid: Grid, congestion: number })
                 });
 
                 // Intersection Check for Light
-                // If neighbors.length > 2, it's intersection.
                 const isIntersection = neighbors.length > 2;
 
                 if (isIntersection) {
@@ -818,9 +835,6 @@ const TrafficSystem = ({ grid, congestion }: { grid: Grid, congestion: number })
                      // If moving NS (heading 0 or 2) and light is EW
                      const isNS = car.heading === 0 || car.heading === 2;
                      if ((isNS && lightState === 'EW') || (!isNS && lightState === 'NS')) {
-                         // Wait here? No, real cars wait BEFORE entering.
-                         // But for simple sim, let's just pause them if they try to leave?
-                         // Or better: Visual traffic lights exist, so let's pause.
                          shouldWait = true;
                      }
                 }
@@ -875,10 +889,25 @@ const TrafficSystem = ({ grid, congestion }: { grid: Grid, congestion: number })
                  if (car.heading === 3) rot = -Math.PI/2;
                  dummy.rotation.set(0, rot, 0);
                  
-                 dummy.scale.set(0.2, 0.15, 0.35); // Car shape
+                 // Scale based on type
+                 let sx = 0.2, sy = 0.15, sz = 0.35;
+                 if (car.type === 'truck') { sx = 0.22; sy = 0.25; sz = 0.55; }
+                 if (car.type === 'bus') { sx = 0.22; sy = 0.22; sz = 0.65; }
+                 if (car.type === 'police') { sx = 0.2; sy = 0.15; sz = 0.35; }
+
+                 dummy.scale.set(sx, sy, sz);
+                 
                  dummy.updateMatrix();
                  instanceRef.current!.setMatrixAt(i, dummy.matrix);
-                 instanceRef.current!.setColorAt(i, new THREE.Color(car.color));
+                 
+                 let c = new THREE.Color(car.color);
+                 if (car.type === 'police') {
+                     // Flash blue/red
+                     const time = state.clock.elapsedTime * 10;
+                     if (Math.sin(time) > 0) c.set('#ef4444');
+                     else c.set('#3b82f6');
+                 }
+                 instanceRef.current!.setColorAt(i, c);
              });
              instanceRef.current.instanceMatrix.needsUpdate = true;
              if (instanceRef.current.instanceColor) instanceRef.current.instanceColor.needsUpdate = true;
