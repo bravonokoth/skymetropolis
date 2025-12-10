@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 import React, { useEffect, useRef, useState } from 'react';
-import { BuildingType, CityStats, AIGoal, NewsItem } from '../types';
+import { BuildingType, CityStats, AIGoal, NewsItem, BudgetAllocation } from '../types';
 import { BUILDINGS } from '../constants';
 
 interface UIOverlayProps {
@@ -16,6 +16,7 @@ interface UIOverlayProps {
   isGeneratingGoal: boolean;
   aiEnabled: boolean;
   onSave: () => void;
+  onBudgetChange: (category: keyof BudgetAllocation, value: number) => void;
 }
 
 const tools = [
@@ -73,6 +74,38 @@ const ToolButton: React.FC<{
   );
 };
 
+const BudgetSlider: React.FC<{
+  label: string;
+  value: number;
+  icon: string;
+  onChange: (val: number) => void;
+  colorClass: string;
+}> = ({ label, value, icon, onChange, colorClass }) => {
+  return (
+    <div className="flex flex-col gap-1 mb-3">
+      <div className="flex justify-between items-center text-xs">
+         <span className="flex items-center gap-2 font-bold text-gray-300">
+             <span>{icon}</span> {label}
+         </span>
+         <span className={`font-mono font-bold ${colorClass}`}>{value}%</span>
+      </div>
+      <div className="flex items-center gap-2">
+         <span className="text-[10px] text-gray-500 w-6">50%</span>
+         <input 
+            type="range" 
+            min="50" 
+            max="150" 
+            step="5"
+            value={value}
+            onChange={(e) => onChange(Number(e.target.value))}
+            className="flex-1 h-1.5 bg-gray-700 rounded-lg appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+         />
+         <span className="text-[10px] text-gray-500 w-6 text-right">150%</span>
+      </div>
+    </div>
+  );
+};
+
 const UIOverlay: React.FC<UIOverlayProps> = ({
   stats,
   selectedTool,
@@ -82,11 +115,13 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
   onClaimReward,
   isGeneratingGoal,
   aiEnabled,
-  onSave
+  onSave,
+  onBudgetChange
 }) => {
   const newsRef = useRef<HTMLDivElement>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [hoveredTool, setHoveredTool] = useState<BuildingType | null>(null);
 
   // Auto-scroll news
@@ -154,9 +189,18 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
         
         {/* Stats */}
         <div className="bg-gray-900/90 text-white p-2 md:p-3 rounded-xl border border-gray-700 shadow-2xl backdrop-blur-md flex gap-2 md:gap-4 items-center justify-between md:justify-start w-full md:w-auto relative flex-wrap">
-          <div className="flex flex-col">
+          <div className="flex flex-col relative group cursor-help">
             <span className="text-[8px] md:text-[10px] text-gray-400 uppercase font-bold tracking-widest">Treasury</span>
-            <span className="text-lg md:text-2xl font-black text-green-400 font-mono drop-shadow-md">${stats.money.toLocaleString()}</span>
+            <span className="text-lg md:text-2xl font-black text-green-400 font-mono drop-shadow-md">${Math.floor(stats.money).toLocaleString()}</span>
+            
+            {/* Quick Budget Button overlay/next to it */}
+            <button 
+                onClick={() => setShowBudgetModal(true)}
+                className="absolute -top-1 -right-4 p-1 hover:bg-gray-700 rounded-full transition-colors"
+                title="Manage Budget"
+            >
+                <span className="text-xs">⚙️</span>
+            </button>
           </div>
           <div className="w-px h-6 md:h-8 bg-gray-700 hidden md:block"></div>
           <div className="flex flex-col">
@@ -327,6 +371,12 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                             <span className="text-red-400 font-mono font-bold text-sm">${config.cost}</span>
                         </div>
                     )}
+                     {config.maintenanceCost > 0 && (
+                        <div className="flex justify-between items-center border-b border-gray-800 pb-1">
+                            <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Upkeep</span>
+                            <span className="text-orange-400 font-mono font-bold text-sm">${config.maintenanceCost}/day</span>
+                        </div>
+                    )}
                     {config.incomeGen > 0 && (
                         <div className="flex justify-between items-center">
                             <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Income</span>
@@ -451,6 +501,46 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Budget Modal */}
+      {showBudgetModal && (
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center pointer-events-auto">
+           <div className="bg-slate-900 border border-slate-600 p-6 rounded-xl shadow-2xl max-w-md w-full mx-4 flex flex-col max-h-[90vh]">
+              <div className="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
+                 <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                    <span>⚙️</span> City Budget
+                 </h3>
+                 <button onClick={() => setShowBudgetModal(false)} className="text-gray-400 hover:text-white transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                 </button>
+              </div>
+              
+              <div className="overflow-y-auto pr-2">
+                  <p className="text-gray-400 text-xs mb-4">
+                     Adjusting funding affects service efficiency and monthly upkeep costs. Lower funding saves money but reduces service quality.
+                  </p>
+                  
+                  <BudgetSlider label="Power Grid" icon="⚡" value={stats.budget.power} onChange={(v) => onBudgetChange('power', v)} colorClass="text-yellow-400" />
+                  <BudgetSlider label="Water Works" icon="💧" value={stats.budget.water} onChange={(v) => onBudgetChange('water', v)} colorClass="text-blue-400" />
+                  <BudgetSlider label="Infrastructure (Roads)" icon="🛣️" value={stats.budget.infrastructure} onChange={(v) => onBudgetChange('infrastructure', v)} colorClass="text-gray-300" />
+                  <div className="h-px bg-slate-700 my-3"></div>
+                  <BudgetSlider label="Education" icon="🎓" value={stats.budget.education} onChange={(v) => onBudgetChange('education', v)} colorClass="text-amber-400" />
+                  <BudgetSlider label="Healthcare" icon="🏥" value={stats.budget.healthcare} onChange={(v) => onBudgetChange('healthcare', v)} colorClass="text-red-300" />
+                  <BudgetSlider label="Public Safety" icon="🛡️" value={stats.budget.safety} onChange={(v) => onBudgetChange('safety', v)} colorClass="text-blue-500" />
+                  <BudgetSlider label="Parks & Environment" icon="🌳" value={stats.budget.environment} onChange={(v) => onBudgetChange('environment', v)} colorClass="text-green-400" />
+
+              </div>
+              
+              <div className="mt-4 pt-4 border-t border-slate-700 text-center">
+                  <button onClick={() => setShowBudgetModal(false)} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold text-sm transition-colors">
+                      Apply Changes
+                  </button>
+              </div>
+           </div>
         </div>
       )}
     </div>

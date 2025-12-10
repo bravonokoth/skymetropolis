@@ -51,6 +51,15 @@ function App() {
     goodsSupply: 0,
     goodsDemand: 0,
     safetyCoverage: 100,
+    budget: {
+      infrastructure: 100,
+      power: 100,
+      water: 100,
+      education: 100,
+      healthcare: 100,
+      safety: 100,
+      environment: 100
+    }
   });
   const [selectedTool, setSelectedTool] = useState<BuildingType>(BuildingType.Road);
   
@@ -142,6 +151,15 @@ function App() {
           goodsSupply: gameState.stats.goodsSupply ?? 0,
           goodsDemand: gameState.stats.goodsDemand ?? 0,
           safetyCoverage: gameState.stats.safetyCoverage ?? 100,
+          budget: gameState.stats.budget || {
+            infrastructure: 100,
+            power: 100,
+            water: 100,
+            education: 100,
+            healthcare: 100,
+            safety: 100,
+            environment: 100
+          }
         });
         setCurrentGoal(gameState.currentGoal);
         setNewsFeed(gameState.newsFeed);
@@ -177,10 +195,27 @@ function App() {
     if (!gameStarted) return;
 
     const intervalId = setInterval(() => {
-      // 1. Calculate Util & Income/Pop
+      // 1. Calculate Util & Income/Pop & Maintenance
       let dailyIncome = 0;
+      let dailyMaintenance = 0;
       let dailyPopGrowth = 0;
       let buildingCounts: Record<string, number> = {};
+      
+      const budget = statsRef.current.budget;
+
+      // Budget Multipliers
+      const getBudgetMultiplier = (type: BuildingType) => {
+        switch(type) {
+          case BuildingType.Road: return budget.infrastructure / 100;
+          case BuildingType.PowerPlant: return budget.power / 100;
+          case BuildingType.WaterPump: return budget.water / 100;
+          case BuildingType.School: return budget.education / 100;
+          case BuildingType.Hospital: return budget.healthcare / 100;
+          case BuildingType.PoliceStation: return budget.safety / 100;
+          case BuildingType.Park: return budget.environment / 100;
+          default: return 1;
+        }
+      };
       
       let pSupply = 0;
       let wSupply = 0;
@@ -194,20 +229,28 @@ function App() {
       let gSupply = 0;
       let gDemand = 0;
 
-      // Pass 1: Aggregate Supply/Demand
+      // Pass 1: Aggregate Supply/Demand/Maintenance
       gridRef.current.flat().forEach(tile => {
         if (tile.buildingType !== BuildingType.None) {
           const config = BUILDINGS[tile.buildingType];
-          pSupply += config.powerGen;
-          wSupply += config.waterGen;
+          const multiplier = getBudgetMultiplier(tile.buildingType);
+
+          // Maintenance
+          dailyMaintenance += config.maintenanceCost * multiplier;
+
+          // Utility Output Scaling based on Budget
+          pSupply += config.powerGen * multiplier;
+          wSupply += config.waterGen * multiplier;
+          
+          eduCapacity += config.educationGen * multiplier;
+          healthCapacity += config.healthcareGen * multiplier;
+          safetyCapacity += config.safetyGen * multiplier;
+          
+          // Demand is fixed, doesn't scale with budget (buildings still need power)
           pDemand += config.powerUsage;
           wDemand += config.waterUsage;
-          
-          eduCapacity += config.educationGen;
-          healthCapacity += config.healthcareGen;
-          safetyCapacity += config.safetyGen;
 
-          gSupply += config.goodsGen;
+          gSupply += config.goodsGen; // Goods production probably not tied to service budget, unless we add an Industrial budget
           gDemand += config.goodsUsage;
           
           buildingCounts[tile.buildingType] = (buildingCounts[tile.buildingType] || 0) + 1;
@@ -316,9 +359,13 @@ function App() {
             else if (rand < 0.85) currentWeather = 'rainy';
             else currentWeather = 'snowy';
         }
+        
+        // Check bankruptcy/negative money logic if desired (optional)
+        const netIncome = dailyIncome - dailyMaintenance;
 
         const newStats = {
-          money: prev.money + dailyIncome,
+          ...prev, // Preserve budget and other existing fields
+          money: prev.money + netIncome,
           population: newPop,
           day: prev.day + 1,
           happiness: newHappiness,
@@ -421,6 +468,16 @@ function App() {
     setAiEnabled(enabled);
     setGameStarted(true);
   };
+  
+  const handleBudgetChange = (category: keyof typeof stats.budget, value: number) => {
+    setStats(prev => ({
+      ...prev,
+      budget: {
+        ...prev.budget,
+        [category]: value
+      }
+    }));
+  };
 
   return (
     <div className="relative w-screen h-screen overflow-hidden selection:bg-transparent selection:text-transparent bg-sky-900">
@@ -451,6 +508,7 @@ function App() {
           isGeneratingGoal={isGeneratingGoal}
           aiEnabled={aiEnabled}
           onSave={handleSaveGame}
+          onBudgetChange={handleBudgetChange}
         />
       )}
 
@@ -466,6 +524,29 @@ function App() {
         ::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
         ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+        
+        /* Range Slider Styling */
+        input[type=range] {
+          -webkit-appearance: none;
+          background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          height: 16px;
+          width: 16px;
+          border-radius: 50%;
+          background: #ffffff;
+          margin-top: -6px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+          cursor: pointer;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+          width: 100%;
+          height: 4px;
+          cursor: pointer;
+          background: rgba(255,255,255,0.2);
+          border-radius: 2px;
+        }
       `}</style>
     </div>
   );

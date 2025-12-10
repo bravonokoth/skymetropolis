@@ -9,12 +9,13 @@ export const GRID_SIZE = 15;
 
 // Game Settings
 export const TICK_RATE_MS = 2000; // Game loop updates every 2 seconds
-export const INITIAL_MONEY = 2500; // Increased starting money for new infrastructure
+export const INITIAL_MONEY = 25000; // Increased starting money for new infrastructure
 
 export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
   [BuildingType.None]: {
     type: BuildingType.None,
     cost: 0,
+    maintenanceCost: 0,
     name: 'Bulldoze',
     description: 'Clear a tile',
     color: '#ef4444', // Used for UI
@@ -33,6 +34,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
   [BuildingType.Road]: {
     type: BuildingType.Road,
     cost: 10,
+    maintenanceCost: 1, // Roads cost upkeep
     name: 'Road',
     description: 'Connects buildings.',
     color: '#374151', // gray-700
@@ -51,6 +53,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
   [BuildingType.Residential]: {
     type: BuildingType.Residential,
     cost: 100,
+    maintenanceCost: 0,
     name: 'House',
     description: '+5 Pop/day',
     color: '#f87171', // red-400
@@ -69,6 +72,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
   [BuildingType.MixedUse]: {
     type: BuildingType.MixedUse,
     cost: 350,
+    maintenanceCost: 0,
     name: 'Mixed Use',
     description: '+Pop & +$$',
     color: '#8b5cf6', // violet-500
@@ -87,6 +91,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
   [BuildingType.Commercial]: {
     type: BuildingType.Commercial,
     cost: 200,
+    maintenanceCost: 0,
     name: 'Shop',
     description: '+$15/day',
     color: '#60a5fa', // blue-400
@@ -105,6 +110,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
   [BuildingType.Industrial]: {
     type: BuildingType.Industrial,
     cost: 400,
+    maintenanceCost: 0,
     name: 'Factory',
     description: '+$40/day, Pollutes',
     color: '#facc15', // yellow-400
@@ -123,6 +129,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
   [BuildingType.Park]: {
     type: BuildingType.Park,
     cost: 50,
+    maintenanceCost: 2, // Gardening upkeep
     name: 'Park',
     description: 'Happiness',
     color: '#4ade80', // green-400
@@ -141,6 +148,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
   [BuildingType.PowerPlant]: {
     type: BuildingType.PowerPlant,
     cost: 500,
+    maintenanceCost: 20,
     name: 'Power Plant',
     description: '+50 Power',
     color: '#ea580c', // orange-600
@@ -159,6 +167,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
   [BuildingType.WaterPump]: {
     type: BuildingType.WaterPump,
     cost: 400,
+    maintenanceCost: 15,
     name: 'Water Pump',
     description: '+50 Water',
     color: '#0ea5e9', // sky-500
@@ -177,6 +186,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
   [BuildingType.School]: {
     type: BuildingType.School,
     cost: 600,
+    maintenanceCost: 25,
     name: 'School',
     description: 'Education Service',
     color: '#fcd34d', // amber-300
@@ -195,6 +205,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
   [BuildingType.Hospital]: {
     type: BuildingType.Hospital,
     cost: 800,
+    maintenanceCost: 40,
     name: 'Hospital',
     description: 'Healthcare Service',
     color: '#fecaca', // red-200 (white/red mix)
@@ -213,6 +224,7 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
   [BuildingType.PoliceStation]: {
     type: BuildingType.PoliceStation,
     cost: 700,
+    maintenanceCost: 30,
     name: 'Police Station',
     description: 'Safety & Security',
     color: '#3b82f6', // blue-500

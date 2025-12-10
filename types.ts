@@ -20,6 +20,7 @@ export enum BuildingType {
 export interface BuildingConfig {
   type: BuildingType;
   cost: number;
+  maintenanceCost: number; // Cost per tick to run
   name: string;
   description: string;
   color: string; // Main color for 3D material
@@ -48,6 +49,16 @@ export type Grid = TileData[][];
 
 export type WeatherType = 'sunny' | 'rainy' | 'snowy';
 
+export interface BudgetAllocation {
+  infrastructure: number; // Roads
+  power: number;
+  water: number;
+  education: number;
+  healthcare: number;
+  safety: number;
+  environment: number; // Parks
+}
+
 export interface CityStats {
   money: number;
   population: number;
@@ -64,6 +75,7 @@ export interface CityStats {
   goodsSupply: number;
   goodsDemand: number;
   safetyCoverage: number; // 0-100%
+  budget: BudgetAllocation;
 }
 
 export interface AIGoal {
