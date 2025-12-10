@@ -43,6 +43,7 @@ export interface TileData {
   buildingType: BuildingType;
   // Suggested by AI for visual variety later
   variant?: number;
+  health?: number; // 0-100. If undefined or 0, considered ruined/rubble if type != None
 }
 
 export type Grid = TileData[][];

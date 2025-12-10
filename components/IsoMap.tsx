@@ -140,6 +140,60 @@ const SirenLight = ({ position }: { position: [number, number, number] }) => {
   );
 };
 
+const FireEffect = () => {
+  const ref = useRef<THREE.Group>(null);
+  useFrame((state) => {
+    if (ref.current) {
+      ref.current.children.forEach((child, i) => {
+        const part = child as THREE.Mesh;
+        part.position.y += 0.02 + Math.random() * 0.01;
+        part.scale.subScalar(0.01);
+        
+        if (part.scale.x <= 0) {
+            part.scale.setScalar(0.2 + Math.random() * 0.3);
+            part.position.y = Math.random() * 0.2;
+            part.position.x = (Math.random() - 0.5) * 0.5;
+            part.position.z = (Math.random() - 0.5) * 0.5;
+        }
+      });
+    }
+  });
+
+  return (
+    <group ref={ref} position={[0, 0.2, 0]}>
+      {[...Array(5)].map((_, i) => (
+         <mesh key={i} geometry={boxGeo} position={[(Math.random()-0.5)*0.5, Math.random()*0.5, (Math.random()-0.5)*0.5]}>
+            <meshBasicMaterial color={Math.random() > 0.5 ? '#ef4444' : '#f97316'} transparent opacity={0.8} />
+         </mesh>
+      ))}
+      {[...Array(3)].map((_, i) => (
+         <mesh key={`smoke-${i}`} geometry={sphereGeo} position={[(Math.random()-0.5)*0.5, 0.5 + Math.random(), (Math.random()-0.5)*0.5]}>
+            <meshStandardMaterial color="#4b5563" transparent opacity={0.6} />
+         </mesh>
+      ))}
+    </group>
+  );
+};
+
+const Rubble = () => {
+    return (
+        <group>
+            <mesh geometry={boxGeo} position={[0, 0.05, 0]} scale={[0.8, 0.1, 0.8]} receiveShadow>
+                <meshStandardMaterial color="#57534e" />
+            </mesh>
+            <mesh geometry={boxGeo} position={[0.2, 0.15, 0.1]} scale={[0.3, 0.2, 0.3]} rotation={[0.2, 0.3, 0]}>
+                <meshStandardMaterial color="#44403c" />
+            </mesh>
+            <mesh geometry={boxGeo} position={[-0.2, 0.1, -0.2]} scale={[0.4, 0.15, 0.4]} rotation={[-0.1, 0, 0.2]}>
+                <meshStandardMaterial color="#57534e" />
+            </mesh>
+             <mesh geometry={boxGeo} position={[0, 0.1, 0.3]} scale={[0.2, 0.1, 0.2]} rotation={[0, 0.5, 0]}>
+                <meshStandardMaterial color="#292524" />
+            </mesh>
+        </group>
+    )
+}
+
 const ConstructionScaffold = () => {
   const craneRef = useRef<THREE.Group>(null);
   
@@ -152,10 +206,14 @@ const ConstructionScaffold = () => {
 
   return (
     <group>
+      {/* Concrete Foundation Slab */}
+      <mesh position={[0, 0.05, 0]} scale={[0.95, 0.1, 0.95]} receiveShadow geometry={boxGeo}>
+         <meshStandardMaterial color="#78716c" roughness={0.9} />
+      </mesh>
+
       {/* Wireframe Box indicating construction zone */}
-      <mesh position={[0, 0.6, 0]} scale={[1.1, 1.2, 1.1]}>
-        <boxGeometry />
-        <meshBasicMaterial color="#facc15" wireframe />
+      <mesh position={[0, 0.6, 0]} scale={[1.1, 1.2, 1.1]} geometry={boxGeo}>
+        <meshBasicMaterial color="#facc15" wireframe transparent opacity={0.3} />
       </mesh>
       
       {/* Corner Posts */}
@@ -203,7 +261,7 @@ const ConstructionScaffold = () => {
   );
 };
 
-const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { type: BuildingType, variant: number, x: number, y: number, happiness: number }) => {
+const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health = 100 }: { type: BuildingType, variant: number, x: number, y: number, happiness: number, health?: number }) => {
   const buildingRef = useRef<THREE.Group>(null);
   const hash = getHash(x, y);
 
@@ -214,6 +272,10 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
   // Slum or Luxury Appearance based on happiness
   const isSlum = happiness < 40;
   const isLuxury = happiness > 80;
+
+  const isDamaged = health < 90;
+  const isRuined = health <= 0;
+  const showFire = health < 50 && health > 0;
 
   // Animation for construction and placement
   useFrame((state, delta) => {
@@ -233,6 +295,10 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
   });
 
   const content = useMemo(() => {
+    if (isRuined) return <Rubble />;
+
+    const matColor = (baseColor: string) => isDamaged ? new THREE.Color(baseColor).multiplyScalar(0.4).getStyle() : baseColor;
+
     switch (type) {
       case BuildingType.Residential:
         if (isSlum) {
@@ -240,14 +306,14 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
              return (
                 <group>
                   <mesh geometry={boxGeo} castShadow receiveShadow position={[0.2, 0.3, 0.2]} scale={[0.4, 0.6, 0.4]}>
-                    <meshStandardMaterial color="#8f7868" roughness={0.9} />
+                    <meshStandardMaterial color={matColor("#8f7868")} roughness={0.9} />
                   </mesh>
                   <mesh geometry={boxGeo} castShadow receiveShadow position={[-0.2, 0.2, -0.2]} scale={[0.4, 0.4, 0.4]}>
-                    <meshStandardMaterial color="#756458" roughness={0.9} />
+                    <meshStandardMaterial color={matColor("#756458")} roughness={0.9} />
                   </mesh>
                   {/* Corrugated Roofs */}
                   <mesh geometry={coneGeo} position={[0.2, 0.65, 0.2]} scale={[0.35, 0.15, 0.35]} rotation={[0, Math.PI/4, 0]}>
-                      <meshStandardMaterial color="#5c4d44" />
+                      <meshStandardMaterial color={matColor("#5c4d44")} />
                   </mesh>
                 </group>
              );
@@ -256,14 +322,14 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
              return (
                 <group>
                   <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.6, 0]} scale={[0.7, 1.2, 0.7]}>
-                     <meshStandardMaterial color="#f0fdfa" metalness={0.2} roughness={0.1} />
+                     <meshStandardMaterial color={matColor("#f0fdfa")} metalness={0.2} roughness={0.1} />
                   </mesh>
                    {/* Glass Balconies */}
                    <WindowBlock position={[0, 0.5, 0.36]} scale={[0.6, 0.2, 0.05]} color="#22d3ee" />
                    <WindowBlock position={[0, 0.9, 0.36]} scale={[0.6, 0.2, 0.05]} color="#22d3ee" />
                    {/* Penthouse Roof */}
                    <mesh geometry={boxGeo} position={[0, 1.25, 0]} scale={[0.5, 0.1, 0.5]}>
-                       <meshStandardMaterial color="#334155" />
+                       <meshStandardMaterial color={matColor("#334155")} />
                    </mesh>
                 </group>
              )
@@ -273,10 +339,10 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
                 // Style 1: L-shape
                 <group key="1">
                     <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.3, 0]} scale={[0.8, 0.6, 0.6]}>
-                      <meshStandardMaterial color="#fca5a5" />
+                      <meshStandardMaterial color={matColor("#fca5a5")} />
                     </mesh>
                     <mesh geometry={coneGeo} position={[0, 0.8, 0]} scale={[0.6, 0.4, 0.6]} rotation={[0, Math.PI/4, 0]}>
-                       <meshStandardMaterial color="#7f1d1d" />
+                       <meshStandardMaterial color={matColor("#7f1d1d")} />
                     </mesh>
                     <WindowBlock position={[0.2, 0.3, 0.31]} scale={[0.2, 0.2, 0.05]} />
                     <WindowBlock position={[-0.2, 0.3, 0.31]} scale={[0.2, 0.2, 0.05]} />
@@ -284,10 +350,10 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
                 // Style 2: Two story box
                 <group key="2">
                    <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.5, 0]} scale={[0.6, 1, 0.6]}>
-                      <meshStandardMaterial color="#fdba74" />
+                      <meshStandardMaterial color={matColor("#fdba74")} />
                     </mesh>
                     <mesh geometry={coneGeo} position={[0, 1.1, 0]} scale={[0.5, 0.3, 0.5]}>
-                        <meshStandardMaterial color="#9a3412" />
+                        <meshStandardMaterial color={matColor("#9a3412")} />
                     </mesh>
                     <WindowBlock position={[0, 0.3, 0.31]} scale={[0.2, 0.2, 0.05]} />
                     <WindowBlock position={[0, 0.7, 0.31]} scale={[0.2, 0.2, 0.05]} />
@@ -302,14 +368,14 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
             <group>
                 {/* Commercial Base */}
                 <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.3, 0]} scale={[0.9, 0.6, 0.9]}>
-                    <meshStandardMaterial color="#a78bfa" />
+                    <meshStandardMaterial color={matColor("#a78bfa")} />
                 </mesh>
                 {/* Shop Window */}
                 <WindowBlock position={[0, 0.2, 0.46]} scale={[0.8, 0.3, 0.05]} color="#fdf4ff" />
                 
                 {/* Residential Top */}
                 <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.9, 0]} scale={[0.7, 0.6, 0.7]}>
-                    <meshStandardMaterial color="#ddd6fe" />
+                    <meshStandardMaterial color={matColor("#ddd6fe")} />
                 </mesh>
                 {/* Windows */}
                 <WindowBlock position={[0.2, 0.9, 0.36]} scale={[0.15, 0.2, 0.05]} />
@@ -318,7 +384,7 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
                 
                 {/* Roof details */}
                 <mesh geometry={boxGeo} position={[0, 1.25, 0]} scale={[0.6, 0.1, 0.6]}>
-                     <meshStandardMaterial color="#5b21b6" />
+                     <meshStandardMaterial color={matColor("#5b21b6")} />
                 </mesh>
             </group>
           );
@@ -329,18 +395,18 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
              return (
                 <group>
                   <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.75, 0]} scale={[0.8, 1.5, 0.8]}>
-                    <meshStandardMaterial color="#93c5fd" metalness={0.4} roughness={0.2} />
+                    <meshStandardMaterial color={matColor("#93c5fd")} metalness={0.4} roughness={0.2} />
                   </mesh>
                   {/* Vertical Strips */}
                   <mesh geometry={boxGeo} position={[0.41, 0.75, 0.2]} scale={[0.05, 1.5, 0.1]}>
-                      <meshStandardMaterial color="#1e3a8a" />
+                      <meshStandardMaterial color={matColor("#1e3a8a")} />
                   </mesh>
                   <mesh geometry={boxGeo} position={[0.41, 0.75, -0.2]} scale={[0.05, 1.5, 0.1]}>
-                      <meshStandardMaterial color="#1e3a8a" />
+                      <meshStandardMaterial color={matColor("#1e3a8a")} />
                   </mesh>
                    {/* Roof AC */}
                   <mesh geometry={boxGeo} position={[0, 1.55, 0]} scale={[0.4, 0.1, 0.4]}>
-                      <meshStandardMaterial color="#64748b" />
+                      <meshStandardMaterial color={matColor("#64748b")} />
                   </mesh>
                 </group>
               );
@@ -349,11 +415,11 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
              return (
                 <group>
                   <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.4, 0]} scale={[0.9, 0.8, 0.9]}>
-                    <meshStandardMaterial color="#60a5fa" />
+                    <meshStandardMaterial color={matColor("#60a5fa")} />
                   </mesh>
                   {/* Large Sign Board */}
                   <mesh geometry={boxGeo} position={[0, 0.9, 0.46]} scale={[0.7, 0.2, 0.05]}>
-                      <meshStandardMaterial color="#1d4ed8" />
+                      <meshStandardMaterial color={matColor("#1d4ed8")} />
                   </mesh>
                   {/* Glass Front */}
                   <WindowBlock position={[0, 0.3, 0.46]} scale={[0.8, 0.4, 0.05]} color="#dbeafe" />
@@ -367,11 +433,11 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
              return (
                 <group>
                     <mesh geometry={boxGeo} castShadow receiveShadow position={[-0.2, 0.4, -0.2]} scale={[0.5, 0.8, 0.5]}>
-                         <meshStandardMaterial color="#eab308" />
+                         <meshStandardMaterial color={matColor("#eab308")} />
                     </mesh>
                     {/* Pipes */}
                      <mesh geometry={torusGeo} position={[-0.2, 0.4, 0.1]} scale={[0.3,0.3,0.3]} rotation={[0,Math.PI/2,0]}>
-                         <meshStandardMaterial color="#a16207" />
+                         <meshStandardMaterial color={matColor("#a16207")} />
                     </mesh>
                     <SmokeStack position={[0.3, 0, 0.3]} color="#713f12" />
                 </group>
@@ -381,15 +447,15 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
             return (
               <group>
                 <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.35, 0]} scale={[0.9, 0.7, 0.9]}>
-                  <meshStandardMaterial color="#facc15" />
+                  <meshStandardMaterial color={matColor("#facc15")} />
                 </mesh>
                 {/* Sawtooth Roof */}
                 <group position={[0, 0.7, 0]}>
                    <mesh geometry={coneGeo} position={[-0.25, 0, 0]} scale={[0.4, 0.3, 0.9]} rotation={[0, 0, Math.PI/4]}>
-                      <meshStandardMaterial color="#854d0e" />
+                      <meshStandardMaterial color={matColor("#854d0e")} />
                    </mesh>
                     <mesh geometry={coneGeo} position={[0.25, 0, 0]} scale={[0.4, 0.3, 0.9]} rotation={[0, 0, Math.PI/4]}>
-                      <meshStandardMaterial color="#854d0e" />
+                      <meshStandardMaterial color={matColor("#854d0e")} />
                    </mesh>
                 </group>
                 <SmokeStack position={[0.35, 0, -0.35]} />
@@ -402,7 +468,7 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
           <group>
             {/* Main reactor building */}
             <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.4, 0]} scale={[0.8, 0.8, 0.8]}>
-              <meshStandardMaterial color="#c2410c" />
+              <meshStandardMaterial color={matColor("#c2410c")} />
             </mesh>
             {/* Cooling Tower 1 */}
             <SmokeStack position={[-0.3, 0, -0.3]} color="#9a3412" />
@@ -410,7 +476,7 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
             <SmokeStack position={[0.3, 0, 0.3]} color="#9a3412" />
              {/* Hazard Stripes */}
             <mesh geometry={boxGeo} position={[0, 0.81, 0]} scale={[0.6, 0.05, 0.6]}>
-                <meshStandardMaterial color="#fbbf24" />
+                <meshStandardMaterial color={matColor("#fbbf24")} />
             </mesh>
           </group>
         );
@@ -420,15 +486,15 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
            <group>
              {/* Pump House */}
              <mesh geometry={boxGeo} castShadow receiveShadow position={[-0.2, 0.3, 0]} scale={[0.4, 0.6, 0.6]}>
-               <meshStandardMaterial color="#0284c7" />
+               <meshStandardMaterial color={matColor("#0284c7")} />
              </mesh>
              {/* Water Tank */}
              <mesh geometry={cylinderGeo} castShadow receiveShadow position={[0.3, 0.4, 0]} scale={[0.35, 0.8, 0.35]}>
-                <meshStandardMaterial color="#bae6fd" metalness={0.3} roughness={0.2} opacity={0.9} transparent />
+                <meshStandardMaterial color={matColor("#bae6fd")} metalness={0.3} roughness={0.2} opacity={0.9} transparent />
              </mesh>
              {/* Pipe */}
              <mesh geometry={cylinderGeo} position={[0.05, 0.2, 0]} rotation={[0, 0, Math.PI/2]} scale={[0.05, 0.4, 0.05]}>
-                <meshStandardMaterial color="#075985" />
+                <meshStandardMaterial color={matColor("#075985")} />
              </mesh>
            </group>
         );
@@ -438,15 +504,15 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
              <group>
                 {/* Main Building Brick */}
                 <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.4, 0]} scale={[0.9, 0.8, 0.6]}>
-                    <meshStandardMaterial color="#d97706" roughness={0.9} /> {/* Amber-600 */}
+                    <meshStandardMaterial color={matColor("#d97706")} roughness={0.9} /> {/* Amber-600 */}
                 </mesh>
                 {/* Entrance */}
                 <mesh geometry={boxGeo} position={[0, 0.3, 0.35]} scale={[0.3, 0.4, 0.2]}>
-                    <meshStandardMaterial color="#b45309" />
+                    <meshStandardMaterial color={matColor("#b45309")} />
                 </mesh>
                 {/* Clock Tower */}
                 <mesh geometry={boxGeo} castShadow position={[0.3, 0.8, 0]} scale={[0.25, 0.6, 0.25]}>
-                    <meshStandardMaterial color="#92400e" />
+                    <meshStandardMaterial color={matColor("#92400e")} />
                 </mesh>
                 {/* Clock Face */}
                  <mesh geometry={circleGeo} position={[0.3, 1, 0.13]} scale={[0.08, 0.08, 1]}>
@@ -460,10 +526,10 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
              <group>
                 {/* Main Wings */}
                 <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.5, 0]} scale={[0.9, 1, 0.4]}>
-                    <meshStandardMaterial color="#f8fafc" /> {/* Slate-50 */}
+                    <meshStandardMaterial color={matColor("#f8fafc")} /> {/* Slate-50 */}
                 </mesh>
                 <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.5, 0]} scale={[0.3, 1, 0.9]}>
-                    <meshStandardMaterial color="#f8fafc" />
+                    <meshStandardMaterial color={matColor("#f8fafc")} />
                 </mesh>
                 {/* Red Cross */}
                 <group position={[0, 0.8, 0.46]} scale={[0.15, 0.15, 1]}>
@@ -476,7 +542,7 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
                 </group>
                 {/* Helipad on roof */}
                  <mesh geometry={circleGeo} position={[0, 1.01, 0]} rotation={[-Math.PI/2, 0, 0]} scale={[0.2, 0.2, 1]}>
-                     <meshBasicMaterial color="#cbd5e1" />
+                     <meshBasicMaterial color={matColor("#cbd5e1")} />
                  </mesh>
                  <mesh geometry={boxGeo} position={[0, 1.02, 0]} scale={[0.15, 0.02, 0.15]}>
                      <meshBasicMaterial color="#ef4444" />
@@ -489,15 +555,15 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
             <group>
                {/* Base Building */}
                <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.4, 0]} scale={[0.8, 0.8, 0.8]}>
-                   <meshStandardMaterial color="#eff6ff" /> {/* Blue-50 */}
+                   <meshStandardMaterial color={matColor("#eff6ff")} /> {/* Blue-50 */}
                </mesh>
                {/* Blue Band */}
                <mesh geometry={boxGeo} position={[0, 0.4, 0]} scale={[0.81, 0.2, 0.81]}>
-                   <meshStandardMaterial color="#2563eb" /> {/* Blue-600 */}
+                   <meshStandardMaterial color={matColor("#2563eb")} /> {/* Blue-600 */}
                </mesh>
                {/* Roof Structure */}
                <mesh geometry={boxGeo} position={[0, 0.85, 0]} scale={[0.6, 0.1, 0.6]}>
-                   <meshStandardMaterial color="#1e3a8a" /> {/* Blue-900 */}
+                   <meshStandardMaterial color={matColor("#1e3a8a")} /> {/* Blue-900 */}
                </mesh>
                {/* Siren */}
                <SirenLight position={[0, 0.95, 0]} />
@@ -508,28 +574,28 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
         return (
           <group>
             <mesh geometry={boxGeo} receiveShadow position={[0, 0.05, 0]} scale={[0.95, 0.1, 0.95]}>
-               <meshStandardMaterial color="#86efac" />
+               <meshStandardMaterial color={matColor("#86efac")} />
             </mesh>
              {/* Trees */}
             <group position={[-0.25, 0, -0.25]}>
                 <mesh geometry={cylinderGeo} position={[0, 0.3, 0]} scale={[0.1, 0.4, 0.1]}>
-                    <meshStandardMaterial color="#78350f" />
+                    <meshStandardMaterial color={matColor("#78350f")} />
                 </mesh>
                 <mesh geometry={coneGeo} position={[0, 0.6, 0]} scale={[0.3, 0.5, 0.3]}>
-                    <meshStandardMaterial color="#166534" />
+                    <meshStandardMaterial color={matColor("#166534")} />
                 </mesh>
             </group>
             <group position={[0.25, 0, 0.25]}>
                 <mesh geometry={cylinderGeo} position={[0, 0.2, 0]} scale={[0.08, 0.3, 0.08]}>
-                    <meshStandardMaterial color="#78350f" />
+                    <meshStandardMaterial color={matColor("#78350f")} />
                 </mesh>
                 <mesh geometry={coneGeo} position={[0, 0.5, 0]} scale={[0.25, 0.4, 0.25]}>
-                    <meshStandardMaterial color="#15803d" />
+                    <meshStandardMaterial color={matColor("#15803d")} />
                 </mesh>
             </group>
              {/* Fountain Water */}
              <mesh geometry={cylinderGeo} position={[0, 0.15, 0]} scale={[0.3, 0.1, 0.3]}>
-                 <meshStandardMaterial color="#bae6fd" />
+                 <meshStandardMaterial color={matColor("#bae6fd")} />
              </mesh>
           </group>
         );
@@ -537,12 +603,13 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness }: { typ
       default:
         return null;
     }
-  }, [type, hash, isSlum, isLuxury]);
+  }, [type, hash, isSlum, isLuxury, isDamaged, isRuined]);
 
   return (
     <group>
       <group ref={buildingRef} position={[0, 0, 0]} scale={[1, 0, 1]}>
         {content}
+        {showFire && <FireEffect />}
       </group>
       {!isBuilt && <ConstructionScaffold />}
     </group>
@@ -1198,6 +1265,7 @@ const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, populat
                           variant={tile.variant || 0} 
                           x={x} y={y} 
                           happiness={happiness}
+                          health={tile.health ?? 100}
                         />
                    )
                 )}

@@ -22,7 +22,7 @@ const createInitialGrid = (): Grid => {
       // Simple circle crop for island look
       const dist = Math.sqrt((x-center)*(x-center) + (y-center)*(y-center));
       
-      row.push({ x, y, buildingType: BuildingType.None });
+      row.push({ x, y, buildingType: BuildingType.None, health: 100 });
     }
     grid.push(row);
   }
@@ -134,8 +134,12 @@ function App() {
     if (saveStr) {
       try {
         const gameState = JSON.parse(saveStr);
-        // Restore state
-        setGrid(gameState.grid);
+        // Restore state - Ensure health property is present for legacy saves
+        const loadedGrid = gameState.grid.map((row: TileData[]) => 
+             row.map((tile: TileData) => ({ ...tile, health: tile.health ?? 100 }))
+        );
+        
+        setGrid(loadedGrid);
         // Ensure properties exist for older saves
         setStats({ 
           ...gameState.stats, 
@@ -239,32 +243,35 @@ function App() {
       let trafficLoad = 0;
       let roadCapacity = 0;
 
-      // Pass 1: Aggregate Supply/Demand/Maintenance
-      gridRef.current.flat().forEach(tile => {
+      // Pass 1: Aggregate Supply/Demand/Maintenance using Grid State
+      const currentGrid = gridRef.current;
+      currentGrid.flat().forEach(tile => {
         if (tile.buildingType !== BuildingType.None) {
           const config = BUILDINGS[tile.buildingType];
           const multiplier = getBudgetMultiplier(tile.buildingType);
+          const healthFactor = (tile.health ?? 100) / 100; // 0.0 to 1.0
 
-          // Maintenance
+          // Maintenance (Full cost even if damaged, technically repair needed)
           dailyMaintenance += config.maintenanceCost * multiplier;
 
-          // Utility Output Scaling based on Budget
-          pSupply += config.powerGen * multiplier;
-          wSupply += config.waterGen * multiplier;
+          // Output Scaling based on Budget AND Health
+          // Damaged buildings produce less
+          pSupply += config.powerGen * multiplier * healthFactor;
+          wSupply += config.waterGen * multiplier * healthFactor;
           
-          eduCapacity += config.educationGen * multiplier;
-          healthCapacity += config.healthcareGen * multiplier;
-          safetyCapacity += config.safetyGen * multiplier;
+          eduCapacity += config.educationGen * multiplier * healthFactor;
+          healthCapacity += config.healthcareGen * multiplier * healthFactor;
+          safetyCapacity += config.safetyGen * multiplier * healthFactor;
           
           // Demand is fixed, doesn't scale with budget (buildings still need power)
+          // Maybe damaged buildings need less power? Let's keep it simple.
           pDemand += config.powerUsage;
           wDemand += config.waterUsage;
 
-          gSupply += config.goodsGen; 
+          gSupply += config.goodsGen * healthFactor; 
           gDemand += config.goodsUsage;
           
           // Traffic Logic
-          // Residential, Commercial, Industrial, MixedUse, School, Hospital generate traffic
           if (tile.buildingType === BuildingType.Residential || 
               tile.buildingType === BuildingType.Commercial || 
               tile.buildingType === BuildingType.Industrial ||
@@ -274,11 +281,8 @@ function App() {
               trafficLoad += 1;
           }
           
-          // Roads provide capacity
           if (tile.buildingType === BuildingType.Road) {
-              // Elevated roads/Overpasses might provide better flow conceptually, 
-              // but for now simple count.
-              roadCapacity += 5; // Each road tile supports 5 units of traffic comfortably
+              roadCapacity += 5 * healthFactor; // Damaged roads support less traffic
           }
 
           buildingCounts[tile.buildingType] = (buildingCounts[tile.buildingType] || 0) + 1;
@@ -297,23 +301,24 @@ function App() {
       if (roadCapacity > 0) {
           currentTrafficCongestion = Math.min(100, (trafficLoad / roadCapacity) * 100);
       } else if (trafficLoad > 0) {
-          currentTrafficCongestion = 100; // Gridlock if no roads
+          currentTrafficCongestion = 100;
       }
 
       // Pass 2: Calculate Output based on Efficiency
-      gridRef.current.flat().forEach(tile => {
+      currentGrid.flat().forEach(tile => {
          if (tile.buildingType !== BuildingType.None) {
           const config = BUILDINGS[tile.buildingType];
-          // Income requires Utils AND Goods (for commercial)
-          let tileIncome = config.incomeGen * basicUtilEfficiency;
+          const healthFactor = (tile.health ?? 100) / 100;
           
-          // Commercial/MixedUse suffer if goods are low
+          // Income requires Utils AND Goods (for commercial) AND Health
+          let tileIncome = config.incomeGen * basicUtilEfficiency * healthFactor;
+          
           if (config.goodsUsage > 0) {
              tileIncome *= goodsEfficiency;
           }
           
           dailyIncome += tileIncome;
-          dailyPopGrowth += config.popGen * basicUtilEfficiency;
+          dailyPopGrowth += config.popGen * basicUtilEfficiency * healthFactor;
          }
       });
 
@@ -322,6 +327,68 @@ function App() {
       const mixedCount = buildingCounts[BuildingType.MixedUse] || 0;
       const totalHousing = (resCount * 50) + (mixedCount * 100); 
       
+      // -- Disaster Simulation --
+      // Chance of disaster based on conditions
+      const pollution = statsRef.current.pollution;
+      const weather = statsRef.current.weather;
+      
+      // Fire Hazard: Higher with pollution and sunny weather
+      let fireChance = 0.001; // Base 0.1% per tick
+      if (weather === 'sunny') fireChance += 0.002;
+      if (pollution > 50) fireChance += 0.003;
+      
+      // Storm/Flood Hazard: Higher with rain
+      let stormChance = 0.001;
+      if (weather === 'rainy') stormChance += 0.005;
+
+      // Roll
+      const rand = Math.random();
+      let disasterOccurred = false;
+      let disasterType = '';
+      
+      if (rand < fireChance) {
+          disasterType = 'Fire';
+      } else if (rand < fireChance + stormChance) {
+          disasterType = 'Storm';
+      }
+
+      if (disasterType) {
+          // Find target buildings
+          const builtTiles = currentGrid.flat().filter(t => t.buildingType !== BuildingType.None && t.buildingType !== BuildingType.Road && (t.health ?? 100) > 0);
+          
+          if (builtTiles.length > 0) {
+              // Pick random center
+              const center = builtTiles[Math.floor(Math.random() * builtTiles.length)];
+              
+              // Damage radius
+              const radius = 2;
+              const newGrid = currentGrid.map(row => row.map(tile => ({...tile})));
+              let hitCount = 0;
+
+              for(let y = Math.max(0, center.y - radius); y <= Math.min(GRID_SIZE-1, center.y + radius); y++) {
+                 for(let x = Math.max(0, center.x - radius); x <= Math.min(GRID_SIZE-1, center.x + radius); x++) {
+                     const t = newGrid[y][x];
+                     if (t.buildingType !== BuildingType.None && (t.health ?? 100) > 0) {
+                         // Damage amount
+                         const damage = Math.floor(Math.random() * 40) + 20; // 20-60 damage
+                         t.health = Math.max(0, (t.health ?? 100) - damage);
+                         hitCount++;
+                     }
+                 }
+              }
+              
+              if (hitCount > 0) {
+                  setGrid(newGrid);
+                  addNewsItem({
+                      id: Date.now().toString(), 
+                      text: `DISASTER! ${disasterType} struck at ${center.x},${center.y}. ${hitCount} buildings damaged!`, 
+                      type: 'negative'
+                  });
+                  disasterOccurred = true;
+              }
+          }
+      }
+
       // 2. Update Stats
       setStats(prev => {
         let newPop = prev.population + dailyPopGrowth;
@@ -337,8 +404,7 @@ function App() {
         let currentPollution = (indCount * 10) + (powerCount * 5) - (parkCount * 5);
         currentPollution = Math.max(0, Math.min(100, currentPollution));
 
-        // -- Services (Education & Healthcare & Safety) Coverage --
-        // Base coverage is 100 if pop is 0
+        // -- Services --
         let eduCov = 100;
         let healthCov = 100;
         let safetyCov = 100;
@@ -353,42 +419,38 @@ function App() {
         let newHappiness = 60; // Base
         
         // Modifiers
-        newHappiness += Math.min(parkCount * 5, 30); // Parks up to +30
-        newHappiness -= Math.floor(currentPollution * 0.8); // Pollution penalty
+        newHappiness += Math.min(parkCount * 5, 30);
+        newHappiness -= Math.floor(currentPollution * 0.8);
         
-        if (totalHousing > 0 && newPop > totalHousing * 0.9) newHappiness -= 15; // Overcrowding
-        if (totalHousing === 0 && newPop > 0) newHappiness = 10; // Homelessness
+        if (totalHousing > 0 && newPop > totalHousing * 0.9) newHappiness -= 15;
+        if (totalHousing === 0 && newPop > 0) newHappiness = 10;
 
-        // Utility Penalties
         if (powerEfficiency < 1) newHappiness -= 20 * (1 - powerEfficiency);
         if (waterEfficiency < 1) newHappiness -= 20 * (1 - waterEfficiency);
         
-        // Service Satisfaction Penalties/Bonuses
         if (eduCov < 50) newHappiness -= 15 * (1 - eduCov/50);
         else if (eduCov > 80) newHappiness += 5;
         
-        if (healthCov < 50) newHappiness -= 20 * (1 - healthCov/50); // Health is critical
+        if (healthCov < 50) newHappiness -= 20 * (1 - healthCov/50);
         else if (healthCov > 80) newHappiness += 5;
 
-        // Safety impact
-        if (safetyCov < 50) newHappiness -= 15 * (1 - safetyCov/50); // Crime rampant
+        if (safetyCov < 50) newHappiness -= 15 * (1 - safetyCov/50);
         else if (safetyCov > 90) newHappiness += 5;
 
-        // Supply chain happiness
-        if (goodsEfficiency < 0.5) newHappiness -= 5; // Shortages
+        if (goodsEfficiency < 0.5) newHappiness -= 5;
 
-        // Traffic Penalty
         if (currentTrafficCongestion > 60) {
             newHappiness -= Math.floor((currentTrafficCongestion - 60) * 0.5);
         }
 
-        // Wealth bonus
         if (prev.money > 2000) newHappiness += 5;
 
-        // Weather
         if (prev.weather === 'rainy') newHappiness -= 2;
         if (prev.weather === 'sunny') newHappiness += 2;
         if (prev.weather === 'snowy') newHappiness -= 1;
+        
+        // Disaster unhappiness penalty
+        if (disasterOccurred) newHappiness -= 10;
 
         newHappiness = Math.max(0, Math.min(100, Math.floor(newHappiness)));
 
@@ -441,7 +503,7 @@ function App() {
         return newStats;
       });
 
-      fetchNews();
+      if (!disasterOccurred) fetchNews();
 
     }, TICK_RATE_MS);
 
@@ -463,13 +525,32 @@ function App() {
     const currentTile = currentGrid[y][x];
     const buildingConfig = BUILDINGS[tool];
 
+    // Repair Logic: Click damaged building with non-bulldoze tool
+    if (currentTile.buildingType !== BuildingType.None && tool !== BuildingType.None && (currentTile.health ?? 100) < 100) {
+        // Only allow repair if same type OR just allow general repair? 
+        // Prompt implies "intervention". General repair is friendlier.
+        // Cost: 50% of original cost
+        const repairCost = Math.floor(BUILDINGS[currentTile.buildingType].cost * 0.5);
+        
+        if (currentStats.money >= repairCost) {
+            const newGrid = currentGrid.map(row => [...row]);
+            newGrid[y][x] = { ...currentTile, health: 100 };
+            setGrid(newGrid);
+            setStats(prev => ({ ...prev, money: prev.money - repairCost }));
+            addNewsItem({id: Date.now().toString(), text: "Building repaired.", type: 'neutral'});
+        } else {
+            addNewsItem({id: Date.now().toString(), text: "Insufficient funds for repairs.", type: 'negative'});
+        }
+        return;
+    }
+
     // Bulldoze logic
     if (tool === BuildingType.None) {
       if (currentTile.buildingType !== BuildingType.None) {
         const demolishCost = 5;
         if (currentStats.money >= demolishCost) {
             const newGrid = currentGrid.map(row => [...row]);
-            newGrid[y][x] = { ...currentTile, buildingType: BuildingType.None, variant: 0 };
+            newGrid[y][x] = { ...currentTile, buildingType: BuildingType.None, variant: 0, health: 100 };
             setGrid(newGrid);
             setStats(prev => ({ ...prev, money: prev.money - demolishCost }));
         } else {
@@ -488,7 +569,7 @@ function App() {
        if (newVariant === 0) variantName = "Ground Road";
        if (newVariant === 2 || newVariant === 3) variantName = "Intersection Bridge";
 
-       const upgradeCost = 50; // Flat fee for infrastructure upgrade
+       const upgradeCost = 50; 
        if (currentStats.money >= upgradeCost) {
           const newGrid = currentGrid.map(row => [...row]);
           newGrid[y][x] = { ...currentTile, variant: newVariant };
@@ -509,7 +590,7 @@ function App() {
         
         // Place building
         const newGrid = currentGrid.map(row => [...row]);
-        newGrid[y][x] = { ...currentTile, buildingType: tool, variant: 0 };
+        newGrid[y][x] = { ...currentTile, buildingType: tool, variant: 0, health: 100 };
         setGrid(newGrid);
       } else {
         // Not enough money feedback
@@ -522,7 +603,6 @@ function App() {
     if (currentGoal && currentGoal.completed) {
       setStats(prev => ({ ...prev, money: prev.money + currentGoal.reward }));
       addNewsItem({id: Date.now().toString(), text: `Goal achieved! ${currentGoal.reward} deposited to treasury.`, type: 'positive'});
-      // Reset goal to null. The monitoring effect will pick this up and fetch a new goal automatically.
       setCurrentGoal(null);
     }
   };

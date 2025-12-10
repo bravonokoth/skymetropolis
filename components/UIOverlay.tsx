@@ -374,6 +374,11 @@ const UIOverlay: React.FC<UIOverlayProps> = ({
                  <div className="text-gray-400 mb-3 italic leading-tight">{config.description}</div>
                  
                  <div className="space-y-1.5">
+                    {/* Add Health Stat for hover over existing? No, this is for toolbar. 
+                        However, we can add general info here.
+                    */}
+                    <div className="text-gray-500 text-[9px]">Click damaged buildings to repair (50% cost).</div>
+
                     {config.cost > 0 && (
                         <div className="flex justify-between items-center border-b border-gray-800 pb-1">
                             <span className="text-gray-500 uppercase text-[10px] font-bold tracking-wider">Cost</span>
