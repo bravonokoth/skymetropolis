@@ -15,6 +15,8 @@ export enum BuildingType {
   School = 'School',
   Hospital = 'Hospital',
   PoliceStation = 'PoliceStation',
+  Stadium = 'Stadium',
+  Airport = 'Airport',
 }
 
 export interface BuildingConfig {

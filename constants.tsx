@@ -240,4 +240,42 @@ export const BUILDINGS: Record<BuildingType, BuildingConfig> = {
     goodsUsage: 1,
     safetyGen: 200, // Protects 200 people
   },
+  [BuildingType.Stadium]: {
+    type: BuildingType.Stadium,
+    cost: 3000,
+    maintenanceCost: 100,
+    name: 'Stadium',
+    description: 'Major Entertainment',
+    color: '#10b981', // emerald-500
+    popGen: 0,
+    incomeGen: 60,
+    powerUsage: 15,
+    waterUsage: 10,
+    powerGen: 0,
+    waterGen: 0,
+    educationGen: 0,
+    healthcareGen: 0,
+    goodsGen: 0,
+    goodsUsage: 5, // Consumes goods (concessions)
+    safetyGen: 0,
+  },
+  [BuildingType.Airport]: {
+    type: BuildingType.Airport,
+    cost: 8000,
+    maintenanceCost: 250,
+    name: 'Airport',
+    description: 'Global Trade Hub',
+    color: '#94a3b8', // slate-400
+    popGen: 0,
+    incomeGen: 300,
+    powerUsage: 30,
+    waterUsage: 10,
+    powerGen: 0,
+    waterGen: 0,
+    educationGen: 0,
+    healthcareGen: 0,
+    goodsGen: 50, // Imports goods
+    goodsUsage: 0,
+    safetyGen: 0,
+  },
 };

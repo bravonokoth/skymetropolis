@@ -32,6 +32,8 @@ const tools = [
   BuildingType.Hospital,
   BuildingType.PoliceStation,
   BuildingType.Park,
+  BuildingType.Stadium,
+  BuildingType.Airport,
 ];
 
 const ToolButton: React.FC<{

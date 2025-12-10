@@ -227,6 +227,8 @@ function App() {
           case BuildingType.Hospital: return budget.healthcare / 100;
           case BuildingType.PoliceStation: return budget.safety / 100;
           case BuildingType.Park: return budget.environment / 100;
+          case BuildingType.Stadium: return budget.environment / 100; // Stadiums affected by environment/rec budget
+          case BuildingType.Airport: return budget.infrastructure / 100; // Airports affected by infra budget
           default: return 1;
         }
       };
@@ -280,8 +282,12 @@ function App() {
               tile.buildingType === BuildingType.Industrial ||
               tile.buildingType === BuildingType.MixedUse ||
               tile.buildingType === BuildingType.School || 
-              tile.buildingType === BuildingType.Hospital) {
+              tile.buildingType === BuildingType.Hospital ||
+              tile.buildingType === BuildingType.Stadium ||
+              tile.buildingType === BuildingType.Airport) {
               trafficLoad += 1;
+              if (tile.buildingType === BuildingType.Stadium) trafficLoad += 4; // High traffic
+              if (tile.buildingType === BuildingType.Airport) trafficLoad += 12; // Very High traffic (Airports are busy)
           }
           
           if (tile.buildingType === BuildingType.Road) {
@@ -403,9 +409,11 @@ function App() {
         // -- Pollution --
         const indCount = buildingCounts[BuildingType.Industrial] || 0;
         const powerCount = buildingCounts[BuildingType.PowerPlant] || 0;
+        const airportCount = buildingCounts[BuildingType.Airport] || 0;
         const parkCount = buildingCounts[BuildingType.Park] || 0;
         
-        let currentPollution = (indCount * 10) + (powerCount * 5) - (parkCount * 5);
+        // Airports create significant pollution (noise, jet fuel)
+        let currentPollution = (indCount * 10) + (powerCount * 5) + (airportCount * 20) - (parkCount * 5);
         currentPollution = Math.max(0, Math.min(100, currentPollution));
 
         // -- Services --
@@ -423,7 +431,13 @@ function App() {
         let newHappiness = 60; // Base
         
         // Modifiers
-        newHappiness += Math.min(parkCount * 5, 30);
+        const stadiumCount = buildingCounts[BuildingType.Stadium] || 0;
+        
+        // Split bonuses: Parks provide Environment happiness, Stadiums provide Entertainment happiness
+        const parkBonus = Math.min(parkCount * 5, 20); // Cap park happiness
+        const entertainmentBonus = Math.min(stadiumCount * 15, 30); // Cap entertainment happiness
+        newHappiness += (parkBonus + entertainmentBonus);
+        
         newHappiness -= Math.floor(currentPollution * 0.8);
         
         if (totalHousing > 0 && newPop > totalHousing * 0.9) newHappiness -= 15;

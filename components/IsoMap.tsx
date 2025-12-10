@@ -75,6 +75,7 @@ const coneGeo = new THREE.ConeGeometry(1, 1, 16);
 const sphereGeo = new THREE.SphereGeometry(1, 8, 8);
 const torusGeo = new THREE.TorusGeometry(0.5, 0.1, 8, 16);
 const circleGeo = new THREE.CircleGeometry(1, 32);
+const planeGeo = new THREE.PlaneGeometry(1, 1);
 
 // --- 1. Advanced Procedural Buildings ---
 
@@ -596,6 +597,70 @@ const ProceduralBuilding = React.memo(({ type, variant, x, y, happiness, health 
              {/* Fountain Water */}
              <mesh geometry={cylinderGeo} position={[0, 0.15, 0]} scale={[0.3, 0.1, 0.3]}>
                  <meshStandardMaterial color={matColor("#bae6fd")} />
+             </mesh>
+          </group>
+        );
+
+      case BuildingType.Stadium:
+        return (
+          <group>
+             {/* Base */}
+             <mesh geometry={boxGeo} castShadow receiveShadow position={[0, 0.1, 0]} scale={[0.9, 0.2, 0.9]}>
+                 <meshStandardMaterial color={matColor("#94a3b8")} />
+             </mesh>
+             {/* Stands Ring (simulated with torus) */}
+             <mesh geometry={torusGeo} position={[0, 0.3, 0]} scale={[0.8, 0.8, 1]} rotation={[Math.PI/2, 0, 0]}>
+                 <meshStandardMaterial color={matColor("#cbd5e1")} />
+             </mesh>
+             {/* Outer Wall */}
+             <mesh geometry={cylinderGeo} castShadow position={[0, 0.25, 0]} scale={[0.42, 0.3, 0.42]}>
+                 <meshStandardMaterial color={matColor("#64748b")} />
+             </mesh>
+             {/* Field */}
+             <mesh geometry={planeGeo} position={[0, 0.21, 0]} rotation={[-Math.PI/2, 0, 0]} scale={[0.5, 0.5, 1]}>
+                 <meshStandardMaterial color={matColor("#22c55e")} />
+             </mesh>
+             {/* Lights */}
+             <mesh geometry={boxGeo} position={[0.35, 0.6, 0.35]} scale={[0.05, 0.4, 0.05]}>
+                 <meshStandardMaterial color={matColor("#cbd5e1")} />
+             </mesh>
+             <mesh geometry={boxGeo} position={[-0.35, 0.6, -0.35]} scale={[0.05, 0.4, 0.05]}>
+                 <meshStandardMaterial color={matColor("#cbd5e1")} />
+             </mesh>
+             <mesh geometry={boxGeo} position={[0.35, 0.6, -0.35]} scale={[0.05, 0.4, 0.05]}>
+                 <meshStandardMaterial color={matColor("#cbd5e1")} />
+             </mesh>
+             <mesh geometry={boxGeo} position={[-0.35, 0.6, 0.35]} scale={[0.05, 0.4, 0.05]}>
+                 <meshStandardMaterial color={matColor("#cbd5e1")} />
+             </mesh>
+          </group>
+        );
+
+      case BuildingType.Airport:
+        return (
+          <group>
+             {/* Runway Strip */}
+             <mesh geometry={boxGeo} receiveShadow position={[0, 0.05, 0]} scale={[0.95, 0.1, 0.95]}>
+                 <meshStandardMaterial color={matColor("#334155")} />
+             </mesh>
+             {/* Markings */}
+             <mesh geometry={boxGeo} position={[0, 0.11, 0]} scale={[0.1, 0.02, 0.6]}>
+                 <meshBasicMaterial color="#ffffff" opacity={0.5} transparent />
+             </mesh>
+             {/* Control Tower */}
+             <mesh geometry={cylinderGeo} castShadow position={[-0.3, 0.4, -0.3]} scale={[0.1, 0.8, 0.1]}>
+                 <meshStandardMaterial color={matColor("#e2e8f0")} />
+             </mesh>
+             <mesh geometry={boxGeo} castShadow position={[-0.3, 0.8, -0.3]} scale={[0.2, 0.15, 0.2]}>
+                 <meshStandardMaterial color={matColor("#64748b")} />
+             </mesh>
+             {/* Terminal */}
+             <mesh geometry={boxGeo} castShadow position={[0.2, 0.25, 0.3]} scale={[0.4, 0.3, 0.3]}>
+                 <meshStandardMaterial color={matColor("#94a3b8")} />
+             </mesh>
+             {/* Radar dish */}
+             <mesh geometry={sphereGeo} position={[-0.3, 0.9, -0.3]} scale={[0.08, 0.08, 0.08]}>
+                 <meshStandardMaterial color={matColor("#ef4444")} emissive="#ef4444" />
              </mesh>
           </group>
         );
