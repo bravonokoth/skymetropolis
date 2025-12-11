@@ -10,56 +10,6 @@ import { MathUtils } from 'three';
 import { Grid, BuildingType, TileData, WeatherType } from '../types';
 import { GRID_SIZE, BUILDINGS } from '../constants';
 
-// Fix for TypeScript not recognizing R3F elements in JSX
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      mesh: any;
-      group: any;
-      meshStandardMaterial: any;
-      meshBasicMaterial: any;
-      instancedMesh: any;
-      boxGeometry: any;
-      planeGeometry: any;
-      circleGeometry: any;
-      ringGeometry: any;
-      cylinderGeometry: any;
-      sphereGeometry: any;
-      ambientLight: any;
-      directionalLight: any;
-      fog: any;
-      torusGeometry: any;
-      orthographicCamera: any;
-      color: any;
-    }
-  }
-}
-
-// Augment React's JSX namespace for environments where JSX is resolved from React
-declare module 'react' {
-  namespace JSX {
-    interface IntrinsicElements {
-      mesh: any;
-      group: any;
-      meshStandardMaterial: any;
-      meshBasicMaterial: any;
-      instancedMesh: any;
-      boxGeometry: any;
-      planeGeometry: any;
-      circleGeometry: any;
-      ringGeometry: any;
-      cylinderGeometry: any;
-      sphereGeometry: any;
-      ambientLight: any;
-      directionalLight: any;
-      fog: any;
-      torusGeometry: any;
-      orthographicCamera: any;
-      color: any;
-    }
-  }
-}
-
 // --- Constants & Helpers ---
 const WORLD_OFFSET = GRID_SIZE / 2 - 0.5;
 const gridToWorld = (x: number, y: number) => [x - WORLD_OFFSET, 0, y - WORLD_OFFSET] as [number, number, number];
@@ -1249,20 +1199,20 @@ const EnvironmentEffects = ({ weather }: { weather: WeatherType }) => {
             skyColor = cRain;
             lightColor = new THREE.Color("#94a3b8");
             lightIntensity = 0.5;
-            ambientIntensity = 0.3;
+            ambientIntensity = 0.5; // Was 0.3
             fogNear = 10;
             fogFar = 60;
             // Dim slightly at night even if rainy
             if (cyclePos > 0.5) {
-                 ambientIntensity = 0.15;
-                 lightIntensity = 0.1;
+                 ambientIntensity = 0.4; // Was 0.15
+                 lightIntensity = 0.4; // Was 0.1
             }
         } else if (weather === 'snowy') {
              // ... snowy logic ...
              if (cyclePos > 0.5) {
                  skyColor = cNight;
-                 ambientIntensity = 0.2;
-                 lightIntensity = 0.2;
+                 ambientIntensity = 0.4; // Was 0.2
+                 lightIntensity = 0.4; // Was 0.2
              } else {
                  skyColor = cSnow;
                  ambientIntensity = 0.8;
@@ -1278,8 +1228,8 @@ const EnvironmentEffects = ({ weather }: { weather: WeatherType }) => {
              if (cyclePos < 0.1) { // Sunrise
                  const t = cyclePos / 0.1;
                  skyColor.lerpColors(cNight, cSunrise, t);
-                 lightIntensity = t * 1.5;
-                 ambientIntensity = 0.2 + t * 0.5;
+                 lightIntensity = Math.max(0.5, t * 1.5);
+                 ambientIntensity = Math.max(0.5, 0.2 + t * 0.5);
                  lightColor.set("#fbbf24");
                  sunPos.set(20, t * 15, 10);
              } else if (cyclePos < 0.4) { // Day
@@ -1300,14 +1250,14 @@ const EnvironmentEffects = ({ weather }: { weather: WeatherType }) => {
              } else if (cyclePos < 0.5) { // Sunset
                  const t = (cyclePos - 0.4) / 0.1;
                  skyColor.lerpColors(cDay, cSunset, t);
-                 lightIntensity = 1.8 * (1 - t);
-                 ambientIntensity = 0.75 - t * 0.55;
+                 lightIntensity = Math.max(0.5, 1.8 * (1 - t));
+                 ambientIntensity = Math.max(0.5, 0.75 - t * 0.55);
                  lightColor.lerpColors(new THREE.Color("#fff7ed"), new THREE.Color("#f43f5e"), t);
                  sunPos.set(-10 - t*10, 20 - t*15, 10);
              } else { // Night
                  skyColor = cNight;
-                 lightIntensity = 0.2; // Moonlight
-                 ambientIntensity = 0.2;
+                 lightIntensity = 0.5; // Was 0.2
+                 ambientIntensity = 0.5; // Was 0.2
                  lightColor.set("#334155"); // Cool blueish moon
                  sunPos.set(-10, 10, 0); // Moon position
              }
@@ -1403,7 +1353,7 @@ const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, populat
                       scale={[0.98, 0.4, 0.98]}
                     >
                       <boxGeometry />
-                      <meshStandardMaterial color="#7c2d12" roughness={1} /> {/* Red Soil */}
+                      <meshStandardMaterial color="#9a3412" roughness={1} /> {/* Lighter Red Soil */}
                    </mesh>
                    {/* Grass Top */}
                    <mesh 
@@ -1427,7 +1377,7 @@ const IsoMap: React.FC<IsoMapProps> = ({ grid, onTileClick, hoveredTool, populat
                     >
                       <boxGeometry />
                       <meshStandardMaterial 
-                        color={isHovered ? highlightColor : "#16a34a"} // Vibrant Green
+                        color={isHovered ? highlightColor : "#4ade80"} // Lighter Green
                         roughness={1}
                       />
                       {/* Selection Outline */}
